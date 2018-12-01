@@ -4,14 +4,19 @@
     <script src="phaser.js"></script>
     <meta charset="utf-8">
     <style>
-      body { margin: 0 }
+	body { margin: 0; padding: 0; }
+	canvas {  image-rendering:optimizeSpeed;             /* Legal fallback */  
+		image-rendering:-moz-crisp-edges;          /* Firefox        */  
+		image-rendering:-o-crisp-edges;            /* Opera          */  
+		image-rendering:-webkit-optimize-contrast; /* Safari         */  
+		image-rendering:optimize-contrast;         /* CSS3 Proposed  */  
+		image-rendering:crisp-edges;               /* CSS4 Proposed  */  
+		image-rendering:pixelated;                 /* CSS4 Proposed  */  
+		-ms-interpolation-mode:nearest-neighbor;   /* IE8+           */}
     </style>
 </head>
 <body>
-
-    <script src="zeppelin.js"></script>
     <script src="game.js"></script>
-
 </body>
 </html>
 
