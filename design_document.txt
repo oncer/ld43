@@ -1,0 +1,15 @@
+~~~ GFX ~~~
+
+HUD:
+	- Distance meter
+	- Air: Bar meter
+	- Weight meter
+	
+effects:
+	- destroy (poof)
+	
+obstacles:
+
+	- birds
+	- baby on a balloon
+	
