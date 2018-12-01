@@ -73,6 +73,7 @@ function create ()
       person.x = 64 + person.x % 200;
 
    var deltaT = game.time.elapsed;
+   var T = game.time.now;
    }
 }
 
@@ -80,6 +81,9 @@ function update ()
 {
    // time since last frame, in milliseconds
    deltaT = game.time.elapsed;
+   
+   // time since some start point, in milliseconds
+   T = game.time.now;
    
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
@@ -110,7 +114,7 @@ function update ()
    }
 
    // update zeppelin
-   //zeppelin.y += 1;
+   zeppelin.y += 5 * deltaT/1000 * Math.sin(T/1000);
    
    game.physics.arcade.collide(peopleGroup, zeppelinFloor);
 }
