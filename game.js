@@ -46,7 +46,8 @@ function create ()
    peopleGroup.create(32, 0, 'people').frame = 1;
 
    game.physics.enable(zeppelinFloor, Phaser.Physics.ARCADE);
-
+   
+   zeppelinFloor.body.immovable = true;
    zeppelinFloor.body.gravity = 0;
 
    // set people start pos
@@ -54,11 +55,16 @@ function create ()
       var person = peopleGroup.children[i];
       person.y = zeppelin.y + zeppelin.height - 16 - person.height;
       person.x = 100 + person.x % 100;
+
+   var deltaT = game.time.elapsed;
    }
 }
 
 function update ()
 {
+   // time since last frame, in milliseconds
+   deltaT = game.time.elapsed;
+   
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
       var clickPos = new Phaser.Point(game.camera.view.x + game.input.activePointer.x, game.camera.view.y + game.input.activePointer.y);
