@@ -1,8 +1,10 @@
 
 var config = {
 	type: Phaser.AUTO,
-	width: 1024,
-	height: 576,
+	width: 512,
+	height: 288,
+   pixelArt: true,
+   zoom: 2,
 	physics: {
 		default: 'arcade',
 		arcade: {
@@ -15,34 +17,36 @@ var config = {
 	}
 };
 
-var game = new Phaser.Game(config);
-
 function preload ()
 {
-	this.load.setBaseURL('http://labs.phaser.io');
-
-	this.load.image('sky', 'assets/skies/space3.png');
-	this.load.image('logo', 'assets/sprites/phaser3-logo.png');
-	this.load.image('red', 'assets/particles/red.png');
+	this.load.image('bg', 'gfx/background.png');
+   this.load.image('zeppelin', 'gfx/zeppelin.png')
 }
 
 function create ()
 {
-	this.add.image(400, 300, 'sky');
-
-	var particles = this.add.particles('red');
-
-	var emitter = particles.createEmitter({
-		speed: 100,
-		scale: { start: 1, end: 0 },
-		blendMode: 'ADD'
-	});
-
-	var logo = this.physics.add.image(400, 100, 'logo');
-
-	logo.setVelocity(100, 200);
-	logo.setBounce(1, 1);
-	logo.setCollideWorldBounds(true);
-
-	emitter.startFollow(logo);
+	this.add.image(512/2, 288/2, 'bg');
+   this.add.image(144, 128, 'zeppelin');
 }
+
+function resize() {
+    let canvas = document.querySelector("canvas");
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let wratio = width / height;
+    let ratio = config.width / config.height;
+    if (wratio < ratio) {
+        canvas.style.width = width + "px";
+        canvas.style.height = (width / ratio) + "px";
+    } else {
+        canvas.style.width = (height * ratio) + "px";
+        canvas.style.height = height + "px";
+    }
+}
+
+window.onload = () => {
+  new Phaser.Game(config)
+  resize()
+  window.addEventListener("resize",resize,false)
+}
+
