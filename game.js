@@ -22,8 +22,10 @@ function create ()
 {
    game.physics.startSystem(Phaser.Physics.P2JS)
    game.physics.p2.gravity.y = 100;
+   game.physics.p2.applyDamping = true;
    zeppelinCollisionGroup = game.physics.p2.createCollisionGroup();
    peopleCollisionGroup = game.physics.p2.createCollisionGroup();
+
 
    //864
    game.world.setBounds(0, 0, 512, 288);
@@ -64,6 +66,7 @@ function create ()
       game.physics.p2.enable(person, false);
       person.body.setCollisionGroup(peopleCollisionGroup);
       person.body.collides(zeppelinCollisionGroup);
+      person.body.damping = 0;
    }
 
    // ocean waves
@@ -97,17 +100,20 @@ function update ()
 		 if (peopleClicked.length > 0) {
             personClicked = peopleClicked[0];
             personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
-            console.log(personClickOffset);
+            console.log(personClicked);
          }
       } else {
-         personClicked.x = clickPos.x - personClickOffset.x;
-         personClicked.y = clickPos.y - personClickOffset.y;
+         //personClicked.x = clickPos.x - personClickOffset.x;
+         //personClicked.y = clickPos.y - personClickOffset.y;
+		 var force = [100 * (clickPos.x - personClicked.position[0]), 100 * (clickPos.y - personClicked.position[1])];
+		 console.log(force);
+		 personClicked.applyForce(force, personClicked.x, personClicked.y);
       }
    } else {
       if (personClicked != null) {
          //personClicked.body.reset(personClicked.x, personClicked.y);
       }
-      personClicked = null;
+	  personClicked = null;
       clickPos = null;
    }
 
