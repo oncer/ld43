@@ -22,6 +22,8 @@ function create ()
 {
    game.physics.startSystem(Phaser.Physics.P2JS)
    game.physics.p2.gravity.y = 100;
+   zeppelinCollisionGroup = game.physics.p2.createCollisionGroup();
+   peopleCollisionGroup = game.physics.p2.createCollisionGroup();
 
    //864
    game.world.setBounds(0, 0, 512, 288);
@@ -32,18 +34,12 @@ function create ()
    zeppelin = game.add.sprite(18+128, 92, 'zeppelin');
    zeppelin.anchor.set(0.5, 0.5);
    zeppelin.addChild(propeller);
-   zeppelinFloor = game.add.sprite(0, 72, 'zeppelin-floor');
-   zeppelin.addChild(zeppelinFloor);
-
-   // ocean waves
-   oceanGroup = game.add.group();
-   var f = 0;
-   for (var x = 0; x < game.world.width; x += 16)
-   {
-      var wave = oceanGroup.create(x, game.world.height - 32, 'ocean');
-      var waveAnim = wave.animations.add('wave');
-      waveAnim.play(10, true);
-   }
+   zeppelinFloor = game.add.sprite(zeppelin.x, zeppelin.y + zeppelin.height / 2 + 8, 'zeppelin-floor');
+   game.physics.enable(zeppelinFloor, Phaser.Physics.P2JS);
+   zeppelinFloor.body.static = true;
+   zeppelinFloor.body.gravity = 0;
+   zeppelinFloor.body.setCollisionGroup(zeppelinCollisionGroup);
+   zeppelinFloor.body.collides(peopleCollisionGroup);
  
    // camera
    game.camera.follow(zeppelin);
@@ -62,17 +58,23 @@ function create ()
    //peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
    for (var i = 0; i < 4; i++) {
       var person = peopleGroup.create(i * 32, 0, 'people');
-	  person.frame = i;
-	  person.y = zeppelin.y + zeppelin.height/2 - person.height;
+      person.frame = i;
+      person.y = 0;//zeppelin.y + zeppelin.height/2 - person.height;
       person.x = 64 + person.x % 200;
-	  game.physics.p2.enable(person, false);
+      game.physics.p2.enable(person, false);
+      person.body.setCollisionGroup(peopleCollisionGroup);
+      person.body.collides(zeppelinCollisionGroup);
    }
 
-   game.physics.enable(zeppelinFloor, Phaser.Physics.P2JS);
-   
-   zeppelinFloor.body.static = true;
-   zeppelinFloor.body.gravity = 0;
-   
+   // ocean waves
+   oceanGroup = game.add.group();
+   var f = 0;
+   for (var x = 0; x < game.world.width; x += 16)
+   {
+      var wave = oceanGroup.create(x, game.world.height - 32, 'ocean');
+      var waveAnim = wave.animations.add('wave');
+      waveAnim.play(10, true);
+   }
 
    var deltaT = game.time.elapsed;
    var T = game.time.now;
@@ -116,7 +118,7 @@ function update ()
    }
 
    // update zeppelin
-   zeppelin.y += 5 * deltaT * Math.sin(T);
+   //zeppelin.y += 5 * deltaT * Math.sin(T);
    
    //game.physics.arcade.collide(peopleGroup, zeppelinFloor);
    
