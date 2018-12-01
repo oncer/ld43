@@ -3,7 +3,7 @@
 HUD:
 	- Distance meter
 	- Air: Bar meter
-	- Weight meter
+	- Weight meter -> done
 	
 effects:
 	- destroy (poof)
