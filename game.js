@@ -1,4 +1,3 @@
-
 var config = {
 	type: Phaser.AUTO,
 	width: 512,
@@ -26,9 +25,11 @@ function preload ()
 function create ()
 {
 	this.add.image(512/2, 288/2, 'bg');
-   this.add.image(144, 128, 'zeppelin');
+   this.zeppelin = new Zeppelin(this, 144, 128);
 }
 
+// this function is needed because phaser 3.15
+// does not have a scale manager yet
 function resize() {
     let canvas = document.querySelector("canvas");
     let width = window.innerWidth;
