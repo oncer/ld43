@@ -28,6 +28,7 @@ function create ()
 
    game.add.sprite(0, 0, 'bg');
    propeller = game.add.sprite(-128, 20, 'propeller');
+   propeller.animations.add('propel').play(15, true);
    zeppelin = game.add.sprite(18+128, 92, 'zeppelin');
    zeppelin.anchor.set(0.5, 0.5);
    zeppelin.addChild(propeller);
