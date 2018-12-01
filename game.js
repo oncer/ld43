@@ -66,6 +66,7 @@ function create ()
       game.physics.p2.enable(person, false);
       person.body.setCollisionGroup(peopleCollisionGroup);
       person.body.collides(zeppelinCollisionGroup);
+      person.body.collides(peopleCollisionGroup);
       person.body.damping = 0;
    }
 
