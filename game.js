@@ -20,16 +20,18 @@ function preload ()
 
 function create ()
 {
-   game.physics.startSystem(Phaser.Physics.ARCADE)
-   game.physics.arcade.gravity.y = 100;
+   game.physics.startSystem(Phaser.Physics.P2JS)
+   game.physics.p2.gravity.y = 100;
 
-   game.world.setBounds(0, 0, 512, 864);
+   //864
+   game.world.setBounds(0, 0, 512, 288);
 
    game.add.sprite(0, 0, 'bg');
-   propeller = game.add.sprite(0, 80, 'propeller');
-   zeppelin = game.add.sprite(18, 692, 'zeppelin');
+   propeller = game.add.sprite(-128, 20, 'propeller');
+   zeppelin = game.add.sprite(18+128, 92, 'zeppelin');
+   zeppelin.anchor.set(0.5, 0.5);
    zeppelin.addChild(propeller);
-   zeppelinFloor = game.add.sprite(0, 128, 'zeppelin-floor');
+   zeppelinFloor = game.add.sprite(0, 72, 'zeppelin-floor');
    zeppelin.addChild(zeppelinFloor);
 
    // ocean waves
@@ -55,42 +57,41 @@ function create ()
    personClickOffset = null;
 
    peopleGroup = game.add.group();
-   peopleGroup.enableBody = true;
-   peopleGroup.phyicsBodyType = Phaser.Physics.ARCADE;
+   //peopleGroup.enableBody = true;
+   //peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
    for (var i = 0; i < 4; i++) {
-      peopleGroup.create(i * 32, 0, 'people').frame = i;
+      var person = peopleGroup.create(i * 32, 0, 'people');
+	  person.frame = i;
+	  person.y = zeppelin.y + zeppelin.height/2 - person.height;
+      person.x = 64 + person.x % 200;
+	  game.physics.p2.enable(person, false);
    }
 
-   game.physics.enable(zeppelinFloor, Phaser.Physics.ARCADE);
+   game.physics.enable(zeppelinFloor, Phaser.Physics.P2JS);
    
-   zeppelinFloor.body.immovable = true;
+   zeppelinFloor.body.static = true;
    zeppelinFloor.body.gravity = 0;
-
-   // set people start pos
-   for (var i in peopleGroup.children) {
-      var person = peopleGroup.children[i];
-      person.y = zeppelin.y + zeppelin.height - 16 - person.height;
-      person.x = 64 + person.x % 200;
+   
 
    var deltaT = game.time.elapsed;
    var T = game.time.now;
-   }
 }
 
 function update ()
 {
-   // time since last frame, in milliseconds
-   deltaT = game.time.elapsed;
+   // time since last frame, in seconds
+   deltaT = game.time.elapsed/1000;
    
-   // time since some start point, in milliseconds
-   T = game.time.now;
+   // time since some start point, in seconds
+   T = game.time.now/1000;
    
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
-      var clickPos = new Phaser.Point(game.camera.view.x + game.input.activePointer.x, game.camera.view.y + game.input.activePointer.y);
+      var clickPos = new Phaser.Point(game.physics.p2.pxmi(game.input.activePointer.position.x), game.physics.p2.pxmi(game.input.activePointer.position.y));
       if (personClicked == null) {
-         peopleClicked = game.physics.arcade.getObjectsUnderPointer(game.input.activePointer, peopleGroup);
-         if (peopleClicked.length > 0) {
+		 //getObjectsUnderPointer is not in p2
+         peopleClicked = game.physics.p2.hitTest(game.input.activePointer.position, peopleGroup.children);
+		 if (peopleClicked.length > 0) {
             personClicked = peopleClicked[0];
             personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
             console.log(personClickOffset);
@@ -101,7 +102,7 @@ function update ()
       }
    } else {
       if (personClicked != null) {
-         personClicked.body.reset(personClicked.x, personClicked.y);
+         //personClicked.body.reset(personClicked.x, personClicked.y);
       }
       personClicked = null;
       clickPos = null;
@@ -114,9 +115,10 @@ function update ()
    }
 
    // update zeppelin
-   zeppelin.y += 5 * deltaT/1000 * Math.sin(T/1000);
+   zeppelin.y += 5 * deltaT * Math.sin(T);
    
-   game.physics.arcade.collide(peopleGroup, zeppelinFloor);
+   //game.physics.arcade.collide(peopleGroup, zeppelinFloor);
+   
 }
 
 function render()
