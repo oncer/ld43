@@ -66,16 +66,16 @@ function update ()
          peopleClicked = game.physics.arcade.getObjectsUnderPointer(game.input.activePointer, peopleGroup);
          if (peopleClicked.length > 0) {
             personClicked = peopleClicked[0];
-            personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.body.x, personClicked.body.y));
+            personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
             console.log(personClickOffset);
          }
       } else {
-         personClicked.body.enabled = false;
-         game.physics.arcade.accelerateToPointer(personClicked, game.input.activePointer);
+         personClicked.x = clickPos.x - personClickOffset.x;
+         personClicked.y = clickPos.y - personClickOffset.y;
       }
    } else {
       if (personClicked != null) {
-         personClicked.body.enabled = false;
+         personClicked.body.reset(personClicked.x, personClicked.y);
       }
       personClicked = null;
       clickPos = null;
