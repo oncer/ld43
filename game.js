@@ -38,6 +38,7 @@ function create ()
 	game.physics.startSystem(Phaser.Physics.P2JS)
 	game.physics.p2.gravity.y = 320;
 	game.physics.p2.applyDamping = true;
+	game.physics.p2.setImpactEvents(true);
 	zeppelinCollisionGroup = game.physics.p2.createCollisionGroup();
 	peopleCollisionGroup = game.physics.p2.createCollisionGroup();
 	balloonCollisionGroup = game.physics.p2.createCollisionGroup();
@@ -71,7 +72,7 @@ function create ()
 	zeppelin.body.collides(peopleCollisionGroup);
 	game.physics.enable(propeller, Phaser.Physics.P2JS);
 	propeller.body.setCollisionGroup(propellerCollisionGroup);
-	propeller.body.collides(peopleCollisionGroup);
+	propeller.body.collides(peopleCollisionGroup, personShredded, this);
 	game.physics.p2.createLockConstraint(zeppelin.body, propeller.body, [144-26, 80-154]);
 
 	zeppelinTargetRotation = 0; // slowly rotate to this value
@@ -130,8 +131,9 @@ function create ()
 
 	// gore emmiter
 	goreEmitter = game.add.emitter(0, 0, 100);
-	goreEmitter.makeParticles('gore');
+	goreEmitter.makeParticles('gore', [0,1,2,3,4,5,6]);
 	goreEmitter.gravity = 200;
+	goreEmitter.maxParticles = 500;
 
 
 }
@@ -184,23 +186,30 @@ function update ()
 			//getObjectsUnderPointer is not in p2
 			peopleClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), peopleGroup.children);
 			if (peopleClicked.length > 0) {
-				personClicked = peopleClicked[0];
-				//personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
-				console.log(personClicked);
+				for (var i in peopleClicked) {
+					if (!peopleClicked[i].parent.sprite.inWater) {
+						personClicked = peopleClicked[i];
+						break;
+					}
+				}
+				if (personClicked != null) {
+					//personClicked = peopleClicked[0];
+					//personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
+					console.log(personClicked);
 
-				var localPointInBody = [0, 0];
-				// this function takes physicsPos and coverts it to the body's local coordinate system
-				personClicked.toLocalFrame(localPointInBody, mouseBody.position);
-				// use a revoluteContraint to attach mouseBody to the clicked body
-				mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
+					var localPointInBody = [0, 0];
+					// this function takes physicsPos and coverts it to the body's local coordinate system
+					personClicked.toLocalFrame(localPointInBody, mouseBody.position);
+					// use a revoluteContraint to attach mouseBody to the clicked body
+					mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
 
-				console.log(personClicked.parent.rope);
-				if (personClicked.parent.rope != null){
-					game.physics.p2.removeConstraint(personClicked.parent.rope);
-					delete personClicked.parent.rope;
+					console.log(personClicked.parent.rope);
+					if (personClicked.parent.rope != null){
+						game.physics.p2.removeConstraint(personClicked.parent.rope);
+						delete personClicked.parent.rope;
+					}
 				}
 			}
-			
 			balloonClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), balloonGroup.children);
 			if (balloonClicked.length > 0){
 				balloon = balloonClicked[0];
@@ -211,6 +220,10 @@ function update ()
 			}
 
 		} else {
+			if (personClicked.parent.sprite.inWater) {
+				game.physics.p2.removeConstraint(mouseConstraint);
+				personClicked = null;
+			}
 
 			// moves to the top z-layer
 			personClicked.parent.sprite.moveUp();
@@ -266,6 +279,7 @@ function update ()
 	}
 
 	updateZeppelin();
+	updateWaterCurrent();
 
 	debugText.y = 240 + game.camera.view.y / game.camera.scale.y; 
 	//zeppelin.body.rotateRight(1);
@@ -369,6 +383,25 @@ function updateZeppelin()
 	debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2);
 }
 
+function updateWaterCurrent()
+{
+	for (var i in peopleGroup.children)
+	{
+		var person = peopleGroup.children[i];
+		if (person.body.y > game.world.bounds.height - 32) {
+			person.inWater = true;
+			person.body.moveLeft(100);
+			if (person.body.y > game.world.bounds.height - 48) {
+				// prevent person from disappearing
+				person.body.moveUp(10);
+			}
+		} else {
+			person.inWater = false;
+		}
+	}
+
+}
+
 function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
 {
 	var weights = [ 13, 13, 13, 13, 21, 21, 21, 21, 34, 34, 34, 34 ];
@@ -376,6 +409,7 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 	person.frame = i;
 	person.touchingZeppelin = false;
 	person.touchingPeople = []
+	person.inWater = false;
 	game.physics.p2.enable(person, false);
 	person.body.clearShapes();
 	person.body.loadPolygon('peopleShapes', 'person' + i);
@@ -392,6 +426,27 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 
 	return person;
 }
+
+function destroyPerson(person)
+{
+	// make sure the person is not referenced anymore
+	for (var i in peopleGroup.children)
+	{
+		var otherPerson = peopleGroup.children[i];
+		for (var j in otherPerson.touchingPeople) {
+			if (otherPerson.touchingPeople[j] === person) {
+				otherPerson.touchingPeople.splice(j, 1);
+			}
+		}
+	}
+	if (personClicked != null && personClicked.parent.sprite === person) {
+		game.physics.p2.removeConstraint(mouseConstraint);
+		personClicked = null;
+	}
+
+	person.destroy();
+}
+
 function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
 	var balloon = balloonGroup.create(x, y, 'balloon');
 	balloon.frame = 0;
@@ -450,16 +505,14 @@ function setDistanceBar(value){
 	distanceBarCursor.cameraOffset.x = 376 + value * 242
 }
 
-function goreBurst(x, y) {
-	//	Position the emitter where the mouse/touch event was
-	goreEmitter.x = x;
-	goreEmitter.y = y;
-
-	//	The first parameter sets the effect to "explode" which means all particles are emitted at once
-	//	The second gives each particle a 2000ms lifespan
-	//	The third is ignored when using burst/explode mode
-	//	The final parameter (10) is how many particles will be emitted in this single burst
-	goreEmitter.start(true, 2000, null, 10);
+function personShredded(body1, body2){
+	goreEmitter.area = body2.sprite.getLocalBounds()
+	
+	goreEmitter.x = body2.x;
+	goreEmitter.y = body2.y;
+	
+	goreEmitter.start(true, 2000, null, 50);
+	//body2.sprite.destroy();
 }
 
 function render()
