@@ -1,3 +1,5 @@
+// TODO Ballon wird am Propeller zerstört.
+
 var maxRotation = 0.5; // maximum rotation
 var minZeppelinY = 108;
 var goreEmmiter;
@@ -61,7 +63,7 @@ function create ()
 	propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
 	propeller.animations.add('propel').play(15, true);
 
-	zeppelin = game.add.sprite(144, game.world.height - 154, 'zeppelin');
+	zeppelin = game.add.sprite(164, game.world.height - 154, 'zeppelin');
 	game.physics.enable(zeppelin, Phaser.Physics.P2JS);
 	//zeppelin.addChild(propeller);
 	zeppelin.body.static = true;
@@ -71,6 +73,8 @@ function create ()
 	zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
 	zeppelin.body.collides(peopleCollisionGroup);
 	game.physics.enable(propeller, Phaser.Physics.P2JS);
+	propeller.body.clearShapes();
+	propeller.body.addRectangle(5, 60, -4, 0);
 	propeller.body.setCollisionGroup(propellerCollisionGroup);
 	propeller.body.collides(peopleCollisionGroup, personShredded, this);
 	game.physics.p2.createLockConstraint(zeppelin.body, propeller.body, [144-26, 80-154]);
@@ -440,6 +444,10 @@ function destroyPerson(person)
 				otherPerson.touchingPeople.splice(j, 1);
 			}
 		}
+	}
+	if (person.body.rope != null) {
+		game.physics.p2.removeConstraint(person.body.rope);
+		person.body.rope = null;
 	}
 	if (personClicked != null && personClicked.parent.sprite === person) {
 		game.physics.p2.removeConstraint(mouseConstraint);
