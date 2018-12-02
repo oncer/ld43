@@ -19,6 +19,8 @@ function preload ()
    game.load.physics('peopleShapes', 'gfx/people-shapes.json');
    game.load.spritesheet('ocean', 'gfx/ocean.png', 16, 32);
    game.load.spritesheet('balloon', 'gfx/balloon.png', 32, 32);
+   game.load.spritesheet('hudDistance', 'gfx/hud_distance_bar.png', 128, 16);
+   game.load.spritesheet('hudDistanceCursor', 'gfx/hud_distance_cursor.png', 16, 16);
    game.load.image('island_start', 'gfx/island_start.png');
    game.load.image('island_end', 'gfx/island_end.png');
    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
@@ -85,7 +87,7 @@ function create ()
    
    balloonGroup = game.add.group();
    
-   spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, 5, 300, 200);
+   spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, 5, 500, 200);
    
    // create physics body for mouse which we will use for dragging clicked bodies
    mouseBody = new p2.Body();
@@ -104,6 +106,15 @@ function create ()
    var style = { font: "14px Consolas", fill: "#ff004c", align: "center" };
    debugText = game.add.text(256, 240, "debug text", style);
    debugText.anchor.set(0.5);
+   // HUD
+   distanceBar = game.add.sprite(384, 10, 'hudDistance');
+   distanceBar.fixedToCamera = true;
+   
+   distanceBarCursor = game.add.sprite(0, 10, 'hudDistanceCursor');
+   distanceBarCursor.fixedToCamera = true;
+   setDistanceBar(distanceBarCursor, 0);
+   
+   
 }
 
 function update ()
@@ -193,7 +204,7 @@ function update ()
 		   }
 		   
 	   } else {		   
-	       balloon.body.applyForce([0, 250/10 + 0.01], 0, 0);
+	       balloon.body.applyForce([0.1, 250/10 + 0.01], 0, 0);
 	   }
    }
 
@@ -210,6 +221,7 @@ function update ()
    
    debugText.y = 240 + game.camera.view.y / game.camera.scale.y; 
    //zeppelin.body.rotateRight(1);
+   
 }
 
 function recursivelyIndirectTouchingQuery(person)
@@ -377,6 +389,11 @@ function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
          }
       }
    }
+}
+
+function setDistanceBar(distanceBarCursor, value){
+	//game.add.tween(logo2.cameraOffset).to( { y: 400 }, 2000, Phaser.Easing.Back.InOut, true, 0, 2000, true);
+	distanceBarCursor.cameraOffset.x = 376 + value * 242
 }
 
 function render()
