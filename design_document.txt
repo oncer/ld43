@@ -1,19 +1,24 @@
-~~~ TTIEL ~~~
-
-
-
-~~~ GFX ~~~
+~~~ TODO ~~~
 
 HUD:
-	- Distance meter
-	- Air: Bar meter
-	- Weight meter -> done
-	
-effects:
-	- destroy (poof)
+	- Air: Bar meter == HP!
+	-> Getting Hit -> loose updrift -> constantly
 	
 obstacles:
 
 	- birds
-	- rockets
-	
+	- rockets?
+	- mines (on baloon)
+
+Win & Lose condition!!
+	- Win: (is in TODO in the code)
+	- Lose:
+		- All people are dead
+		-> Kill people when they have x < 0
+
+MUSIC & SOUNDS
+	- BGM
+	- Splatter
+	- Splash (scream?)
+	- Pop
+	- Drag & Drop?
