@@ -1,5 +1,5 @@
 var game = new Phaser.Game(
-   512, 288,
+   1024, 576,
    Phaser.AUTO,
    'lighter-than-air',
    this,
@@ -29,21 +29,22 @@ function create ()
 
    //864
    game.world.setBounds(0, 0, 512, 288);
+   //game.camera.bounds.setTo(512, 288);
+   game.camera.scale.setTo(2);
+   propeller = game.add.sprite(-128, 40, 'propeller');
    
    // 2 bgs for scrolling
    bgGroup = game.add.group();
    bgGroup.create(0, 0, 'bg');
    bgGroup.create(512, 0, 'bg');
-   
-   propeller = game.add.sprite(-128, 20, 'propeller');
    propeller.animations.add('propel').play(15, true);
    zeppelin = game.add.sprite(144, 92, 'zeppelin');
-   zeppelin.addChild(propeller);
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
+   zeppelin.addChild(propeller);
    zeppelin.body.static = true;
    zeppelin.body.gravity = 0;
    zeppelin.body.clearShapes();
-   zeppelin.body.addRectangle(224, 16, 0, 64);
+   zeppelin.body.addRectangle(224, 16, 0, 64 + 32);
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
 
@@ -64,18 +65,7 @@ function create ()
    //peopleGroup.enableBody = true;
    //peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
    for (var i = 0; i < 4; i++) {
-      var person = peopleGroup.create(i * 32, 0, 'people');
-      person.frame = i;
-      person.y = 0;//zeppelin.y + zeppelin.height/2 - person.height;
-      person.x = 64 + person.x % 200;
-      game.physics.p2.enable(person, false);
-      person.body.clearShapes();
-      person.body.loadPolygon('peopleShapes', 'person' + i);
-      person.body.setCollisionGroup(peopleCollisionGroup);
-      person.body.collides(zeppelinCollisionGroup);
-      person.body.collides(peopleCollisionGroup);
-      person.body.damping = 0;
-      person.body.angularDamping = 0.995;
+      spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, 64 + i*32, 0)
    }
    
    // create physics body for mouse which we will use for dragging clicked bodies
@@ -94,6 +84,7 @@ function create ()
 
    var deltaT = game.time.elapsed;
    var T = game.time.now;
+
 }
 
 function update ()
@@ -103,15 +94,18 @@ function update ()
    
    // time since some start point, in seconds
    T = game.time.now/1000;
+
+   var mouseX = game.input.activePointer.position.x * 0.5;
+   var mouseY = game.input.activePointer.position.y * 0.5;
    
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
-	  mouseBody.position[0] = game.physics.p2.pxmi(game.input.activePointer.position.x);
-	  mouseBody.position[1] = game.physics.p2.pxmi(game.input.activePointer.position.y);
-      var clickPos = new Phaser.Point(game.physics.p2.pxmi(game.input.activePointer.position.x), game.physics.p2.pxmi(game.input.activePointer.position.y));
+	  mouseBody.position[0] = game.physics.p2.pxmi(mouseX);
+	  mouseBody.position[1] = game.physics.p2.pxmi(mouseY);
+      var clickPos = new Phaser.Point(game.physics.p2.pxmi(mouseX), game.physics.p2.pxmi(mouseY));
       if (personClicked == null) {
 		 //getObjectsUnderPointer is not in p2
-         peopleClicked = game.physics.p2.hitTest(game.input.activePointer.position, peopleGroup.children);
+         peopleClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), peopleGroup.children);
 		 if (peopleClicked.length > 0) {
             personClicked = peopleClicked[0];
             personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
@@ -139,6 +133,8 @@ function update ()
          // personClicked.damping = 0;
 		 //personClicked.body.reset(personClicked.x, personClicked.y);
 		 game.physics.p2.removeConstraint(mouseConstraint);
+		 //var speed = Math.sqrt(personClicked.velocity.x*personClicked.velocity.x + personClicked.velocity.y*personClicked.velocity.y);
+		 //console.log(speed);
       }
 	  personClicked = null;
       clickPos = null;
@@ -157,8 +153,22 @@ function update ()
    
    
    // update zeppelin
-   //zeppelin.y += 5 * deltaT * Math.sin(T);
+   zeppelin.body.moveUp(3 * Math.sin(T));
    
+   zeppelin.body.rotateRight(1);
+}
+
+function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y){
+	var person = peopleGroup.create(x, y, 'people');
+      person.frame = i;
+      game.physics.p2.enable(person, false);
+      person.body.clearShapes();
+      person.body.loadPolygon('peopleShapes', 'person' + i);
+      person.body.setCollisionGroup(peopleCollisionGroup);
+      person.body.collides(zeppelinCollisionGroup);
+      person.body.collides(peopleCollisionGroup);
+      person.body.damping = 0;
+      person.body.angularDamping = 0.995;
 }
 
 function render()
