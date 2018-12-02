@@ -460,6 +460,8 @@ function destroyPerson(person)
 function balloonShredded(body1, body2)
 {
 	if (body2 != null && body2.sprite != null && body2.sprite.popped == false) {
+		game.physics.p2.removeConstraint(body2.rope);
+		delete body2.rope;
 		body2.sprite.popped = true;
 		body2.sprite.popTime = T;
 	}
