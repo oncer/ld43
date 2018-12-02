@@ -427,7 +427,7 @@ function destroyPerson(person)
 			}
 		}
 	}
-	if (personClicked.parent.sprite === person) {
+	if (personClicked != null && personClicked.parent.sprite === person) {
 		game.physics.p2.removeConstraint(mouseConstraint);
 		personClicked = null;
 	}
