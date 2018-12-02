@@ -1,5 +1,3 @@
-// TODO Ballon wird am Propeller zerstört.
-
 var maxRotation = 0.5; // maximum rotation
 var minZeppelinY = 108;
 var goreEmmiter;
@@ -77,6 +75,7 @@ function create ()
 	propeller.body.addRectangle(5, 60, -4, 0);
 	propeller.body.setCollisionGroup(propellerCollisionGroup);
 	propeller.body.collides(peopleCollisionGroup, personShredded, this);
+	propeller.body.collides(balloonCollisionGroup, balloonShredded, this);
 	game.physics.p2.createLockConstraint(zeppelin.body, propeller.body, [144-26, 80-154]);
 
 	zeppelinTargetRotation = 0; // slowly rotate to this value
@@ -256,7 +255,7 @@ function update ()
 	// update balloons
 	for (var b in balloonGroup.children) {
 		var balloon = balloonGroup.children[b];
-		if (balloon.popped){
+		if (balloon.popped) {
 			if ((T - balloon.popTime)*30 > balloon.frame){
 				if (balloon.frame == 3){
 					balloon.destroy();
@@ -457,11 +456,20 @@ function destroyPerson(person)
 	person.destroy();
 }
 
+function balloonShredded(body1, body2)
+{
+	if (body2 != null && body2.sprite != null && body2.sprite.popped == false) {
+		body2.sprite.popped = true;
+		body2.sprite.popTime = T;
+	}
+}
+
 function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
 	var balloon = balloonGroup.create(x, y, 'balloon');
 	balloon.frame = 0;
 	game.physics.p2.enable(balloon, false);
 	balloon.body.setCollisionGroup(balloonCollisionGroup);
+	balloon.body.collides(propellerCollisionGroup);
 	//balloon.body.gravity = -260;
 
 	//balloon.body.collides(zeppelinCollisionGroup);
