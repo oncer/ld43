@@ -107,15 +107,16 @@ function update ()
             personClicked = peopleClicked[0];
             personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
             console.log(personClicked);
+			
+			
+		    var localPointInBody = [0, 0];
+            // this function takes physicsPos and coverts it to the body's local coordinate system
+            personClicked.toLocalFrame(localPointInBody, mouseBody.position);
+        
+            // use a revoluteContraint to attach mouseBody to the clicked body
+		    mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
          }
 		 
-		 var localPointInBody = [0, 0];
-         // this function takes physicsPos and coverts it to the body's local coordinate system
-         personClicked.toLocalFrame(localPointInBody, mouseBody.position);
-        
-         // use a revoluteContraint to attach mouseBody to the clicked body
-		 mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
-
       } else {
          //personClicked.x = clickPos.x - personClickOffset.x;
          //personClicked.y = clickPos.y - personClickOffset.y;
