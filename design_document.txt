@@ -1,3 +1,7 @@
+~~~ TTIEL ~~~
+
+
+
 ~~~ GFX ~~~
 
 HUD:
@@ -11,5 +15,5 @@ effects:
 obstacles:
 
 	- birds
-	- baby on a balloon
+	- rockets
 	
