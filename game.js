@@ -36,6 +36,7 @@ function create ()
 	game.physics.startSystem(Phaser.Physics.P2JS)
 	game.physics.p2.gravity.y = 250;
 	game.physics.p2.applyDamping = true;
+	game.physics.p2.setImpactEvents(true);
 	zeppelinCollisionGroup = game.physics.p2.createCollisionGroup();
 	peopleCollisionGroup = game.physics.p2.createCollisionGroup();
 	balloonCollisionGroup = game.physics.p2.createCollisionGroup();
@@ -69,7 +70,7 @@ function create ()
 	zeppelin.body.collides(peopleCollisionGroup);
 	game.physics.enable(propeller, Phaser.Physics.P2JS);
 	propeller.body.setCollisionGroup(propellerCollisionGroup);
-	propeller.body.collides(peopleCollisionGroup);
+	propeller.body.collides(peopleCollisionGroup, personShredded, this);
 	game.physics.p2.createLockConstraint(zeppelin.body, propeller.body, [144-26, 80-154]);
 
 	zeppelinTargetRotation = 0; // slowly rotate to this value
@@ -130,8 +131,9 @@ function create ()
 
 	// gore emmiter
 	goreEmitter = game.add.emitter(0, 0, 100);
-	goreEmitter.makeParticles('gore');
+	goreEmitter.makeParticles('gore', [0,1,2,3,4,5,6]);
 	goreEmitter.gravity = 200;
+	goreEmitter.maxParticles = 500;
 
 
 }
@@ -439,16 +441,14 @@ function setDistanceBar(value){
 	distanceBarCursor.cameraOffset.x = 376 + value * 242
 }
 
-function goreBurst(x, y) {
-	//	Position the emitter where the mouse/touch event was
-	goreEmitter.x = x;
-	goreEmitter.y = y;
-
-	//	The first parameter sets the effect to "explode" which means all particles are emitted at once
-	//	The second gives each particle a 2000ms lifespan
-	//	The third is ignored when using burst/explode mode
-	//	The final parameter (10) is how many particles will be emitted in this single burst
-	goreEmitter.start(true, 2000, null, 10);
+function personShredded(body1, body2){
+	goreEmitter.area = body2.sprite.getLocalBounds()
+	
+	goreEmitter.x = body2.x;
+	goreEmitter.y = body2.y;
+	
+	goreEmitter.start(true, 2000, null, 50);
+	//body2.sprite.destroy();
 }
 
 function render()
