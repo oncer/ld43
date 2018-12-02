@@ -21,6 +21,8 @@ function preload ()
    game.load.spritesheet('balloon', 'gfx/balloon.png', 32, 32);
    game.load.spritesheet('hudDistance', 'gfx/hud_distance_bar.png', 128, 16);
    game.load.spritesheet('hudDistanceCursor', 'gfx/hud_distance_cursor.png', 16, 16);
+   game.load.image('island_start', 'gfx/island_start.png');
+   game.load.image('island_end', 'gfx/island_end.png');
    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
 
@@ -36,7 +38,6 @@ function create ()
    
 
    game.world.setBounds(0, 0, 512, 864);
-   //game.camera.bounds.setTo(512, 288);
    game.camera.scale.setTo(2);
 
    // 2 bgs for scrolling
@@ -46,7 +47,8 @@ function create ()
 
    propeller = game.add.sprite(-128, 40, 'propeller');
    propeller.animations.add('propel').play(15, true);
-   zeppelin = game.add.sprite(144, 192, 'zeppelin');
+   island_start = game.add.sprite(0, game.world.height - 80, 'island_start');
+   zeppelin = game.add.sprite(144, game.world.height - 154, 'zeppelin');
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
    zeppelin.addChild(propeller);
    zeppelin.body.static = true;
@@ -55,7 +57,7 @@ function create ()
    zeppelin.body.addRectangle(224, 16, 0, 64 + 32);
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
-
+   
    peopleOnZeppelin = [];
    zeppelinTargetRotation = 0;
    zeppelinSumWeight = 0;
@@ -66,7 +68,7 @@ function create ()
    game.camera.deadzone = new Phaser.Rectangle(16, 16, game.width - 16, game.height - zeppelin.height - 64);
    game.camera.lerpY = 0.1;
 
-   xVel = 1;
+   xVel = 0;
 
    //zeppelin.weight = 500;
 
@@ -77,7 +79,7 @@ function create ()
    //peopleGroup.enableBody = true;
    //peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
    for (var i = 0; i < 4; i++) {
-      spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, 64 + i*32, 0);
+      spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, 64 + i*32, zeppelin.y);
    }
    
    balloonGroup = game.add.group();
@@ -123,6 +125,8 @@ function update ()
 
    var mouseX = game.input.activePointer.position.x / game.camera.scale.y;
    var mouseY = (game.input.activePointer.position.y + game.camera.view.y) / game.camera.scale.y;
+   
+   xVel = Math.min(xVel + .002, 1);
    
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
@@ -203,9 +207,13 @@ function update ()
    }
 
    // Scrolling
-   // ocean wave movement
    oceanGroup.x = (oceanGroup.x - xVel) % game.world.width;
    bgGroup.x = (bgGroup.x - (0.4 * xVel)) % game.world.width;
+   island_start.x -= xVel; 
+   
+   if (island_start.x < -256) {
+      island_start.destroy();
+   }
    
    updateZeppelin();
    
