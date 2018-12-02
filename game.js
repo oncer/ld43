@@ -1,5 +1,5 @@
 var maxRotation = 0.5; // maximum rotation
-
+var minZeppelinY = 108;
 
 var game = new Phaser.Game(
    1024, 576,
@@ -68,7 +68,7 @@ function create ()
  
    // camera
    game.camera.follow(zeppelin);
-   game.camera.deadzone = new Phaser.Rectangle(16, 16, game.width - 16, game.height - zeppelin.height - 64);
+   game.camera.deadzone = new Phaser.Rectangle(0, 128, game.width, game.height - 440);
    game.camera.lerpY = 0.1;
 
    xVel = 0;
@@ -297,7 +297,6 @@ function updateZeppelin()
       zeppelin.body.rotateLeft(1);
    }
 
-
    // calculate Y velocity
    windVelocity = 0;
    c1 = -100;
@@ -306,6 +305,10 @@ function updateZeppelin()
    zeppelinTargetYV = c1 * zeppelin.body.rotation +
       c2 * (zeppelinWeightCapacity - peopleMass) +
       c3 * Math.sin(T);
+
+   if (zeppelin.body.y <= minZeppelinY) {
+      zeppelinTargetYV = 0;
+   }
 
    zeppelin.body.moveUp(zeppelinTargetYV);
 
