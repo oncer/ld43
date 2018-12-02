@@ -50,13 +50,13 @@ function create ()
 	bgGroup.create(0, 0, 'bg');
 	bgGroup.create(512, 0, 'bg');
 
-	propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
-	propeller.animations.add('propel').play(15, true);
-
 	// starting island
 	island_start = game.add.sprite(0, game.world.height - 80, 'island_start');
 	// goal island
 	island_end = game.add.sprite(maxDistance + 256, game.world.height - 80, 'island_end');
+
+	propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
+	propeller.animations.add('propel').play(15, true);
 
 	zeppelin = game.add.sprite(144, game.world.height - 154, 'zeppelin');
 	game.physics.enable(zeppelin, Phaser.Physics.P2JS);
@@ -193,6 +193,7 @@ function update ()
 					delete personClicked.parent.rope;
 				}
 			}
+			
 			balloonClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), balloonGroup.children);
 			if (balloonClicked.length > 0){
 				balloon = balloonClicked[0];
@@ -203,18 +204,18 @@ function update ()
 			}
 
 		} else {
-			//personClicked.x = clickPos.x - personClickOffset.x;
-			//personClicked.y = clickPos.y - personClickOffset.y;
-			// var force = [100 * (clickPos.x - personClicked.position[0]), 100 * (clickPos.y - personClicked.position[1])];
-			// console.log(force);
-			// personClicked.applyForce(force, personClicked.x, personClicked.y);
-			// personClicked.damping = 0.999;
+
+			// moves to the top z-layer
+			personClicked.parent.sprite.moveUp();
+			// disables collision
+			personClicked.parent.data.shapes[0].sensor = true;
+
 		}
 	} else {
 		if (personClicked != null) {
-			// personClicked.damping = 0;
-			//personClicked.body.reset(personClicked.x, personClicked.y);
 			game.physics.p2.removeConstraint(mouseConstraint);
+			// enables collision again
+			personClicked.parent.data.shapes[0].sensor = false;
 		}
 		personClicked = null;
 		clickPos = null;
