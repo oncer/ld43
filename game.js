@@ -173,7 +173,6 @@ function updateZeppelin()
          rightWeight += distanceFromCenter * person.weight;
       }
    }
-   console.log("left " + leftWeight + ", right " + rightWeight);
 }
 
 function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
@@ -197,16 +196,14 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
 {
    if (body == zeppelin.body) {
-      console.log(body);
-      console.log(bodyB);
-      peopleOnZeppelin.unshift(body.sprite);
+      peopleOnZeppelin.unshift(shapeA.body.parent.sprite);
    }
 }
 
 function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
 {
    if (body == zeppelin.body) {
-      peopleOnZeppelin.shift(body.sprite);
+      peopleOnZeppelin.shift(shapeA.body.parent.sprite);
    }
 }
 
