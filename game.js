@@ -502,7 +502,7 @@ function personShredded(body1, body2){
 	goreEmitter.y = body2.y;
 	
 	goreEmitter.start(true, 2000, null, 50);
-	//body2.sprite.destroy();
+	destroyPerson(body2.sprite);
 }
 
 function render()
