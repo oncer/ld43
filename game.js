@@ -54,7 +54,6 @@ function create ()
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
 
-   peopleOnZeppelin = [];
    zeppelinTargetRotation = 0;
    zeppelinSumWeight = 0;
 
@@ -204,10 +203,43 @@ function update ()
    //zeppelin.body.rotateRight(1);
 }
 
+function recursivelyIndirectTouchingQuery(person)
+{
+   person.flagged = true;
+   for (var i in person.touchingPeople)
+   {
+      var otherPerson = person.touchingPeople[i];
+      if (otherPerson.touchingZeppelin) {
+         return true;
+      } else if (!otherPerson.flagged) {
+         return recursivelyIndirectTouchingQuery(otherPerson);
+      }
+   }
+}
+
+function personIndirectlyTouchingZeppelin(person)
+{
+   for (var i in peopleGroup.children) {
+      peopleGroup.children[i].flagged = false;
+   }
+   return recursivelyIndirectTouchingQuery(person);
+}
+
 function updateZeppelin()
 {
    // constant up/down shift
    zeppelin.body.moveUp(3 * Math.sin(T));
+ 
+   // determine who is on the zeppelin
+   // - even indirectly, if standing on top of each other!
+   peopleOnZeppelin = [];
+   for (var i in peopleGroup.children) {
+      var person = peopleGroup.children[i];
+      if (person.touchingZeppelin
+         || personIndirectlyTouchingZeppelin(person)) {
+         peopleOnZeppelin.push(person);
+      }
+   }
 
    // tilt based on people's weight
    var leftWeight = 0;
@@ -248,6 +280,8 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
    var weights = [ 13, 13, 13, 13, 21, 21, 21, 21, 34, 34, 34, 34 ];
 	var person = peopleGroup.create(x, y, 'people');
 	person.frame = i;
+   person.touchingZeppelin = false;
+   person.touchingPeople = []
 	game.physics.p2.enable(person, false);
 	person.body.clearShapes();
 	person.body.loadPolygon('peopleShapes', 'person' + i);
@@ -291,19 +325,25 @@ function spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, z
 
 function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
 {
-   if (body == zeppelin.body) {
-      peopleOnZeppelin.unshift(shapeA.body.parent.sprite);
-      //console.log("person " + shapeA.body.parent.sprite.frame + " entered");
+   if (body === zeppelin.body) {
+      var person = shapeA.body.parent.sprite;
+      person.touchingZeppelin = true;
+   }
+   if (body.sprite.key == "people") {
+      body.sprite.touchingPeople.push(shapeA.body.parent.sprite);
    }
 }
 
 function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
 {
-   if (body == zeppelin.body) {
-      for (var i in peopleOnZeppelin) {
-         if (peopleOnZeppelin[i] == shapeA.body.parent.sprite) {
-            peopleOnZeppelin.splice(i, 1);
-            //console.log("person " + shapeA.body.parent.sprite.frame + " left");
+   if (body === zeppelin.body) {
+      var person = shapeA.body.parent.sprite;
+      person.touchingZeppelin = false;
+   }
+   if (body.sprite.key == "people") {
+      for (var i in body.sprite.touchingPeople) {
+         if (body.sprite.touchingPeople[i] === shapeA.body.parent.sprite) {
+            body.sprite.touchingPeople.splice(i, 1);
             break;
          }
       }
