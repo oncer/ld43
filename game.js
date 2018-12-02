@@ -45,6 +45,8 @@ function create ()
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
 
+   peopleOnZeppelin = [];
+
  
    // camera
    game.camera.follow(zeppelin);
@@ -128,12 +130,12 @@ function update ()
    } else {
       if (personClicked != null) {
          // personClicked.damping = 0;
-		 //personClicked.body.reset(personClicked.x, personClicked.y);
-		 game.physics.p2.removeConstraint(mouseConstraint);
-		 //var speed = Math.sqrt(personClicked.velocity.x*personClicked.velocity.x + personClicked.velocity.y*personClicked.velocity.y);
-		 //console.log(speed);
+         //personClicked.body.reset(personClicked.x, personClicked.y);
+         game.physics.p2.removeConstraint(mouseConstraint);
+         //var speed = Math.sqrt(personClicked.velocity.x*personClicked.velocity.x + personClicked.velocity.y*personClicked.velocity.y);
+         //console.log(speed);
       }
-	  personClicked = null;
+      personClicked = null;
       clickPos = null;
    }
 
@@ -142,24 +144,65 @@ function update ()
       var person = peopleGroup.children[i];
       // ...
    }
-
-   // update zeppelin
-   zeppelin.body.moveUp(3 * Math.sin(T));
    
-   zeppelin.body.rotateRight(1);
+   updateZeppelin();
+   
+   //zeppelin.body.rotateRight(1);
 }
 
-function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y){
+function updateZeppelin()
+{
+   // constant up/down shift
+   zeppelin.body.moveUp(3 * Math.sin(T));
+
+   // tilt based on people's weight
+   var leftWeight = 0;
+   var rightWeight = 0;
+   for (var i in peopleOnZeppelin)
+   {
+      var person = peopleOnZeppelin[i];
+      var distanceFromCenter = (zeppelin.x - person.x) / 64;
+      if (distanceFromCenter < 0) {
+         leftWeight -= distanceFromCenter * person.weight;
+      } else {
+         rightWeight += distanceFromCenter * person.weight;
+      }
+   }
+   console.log("left " + leftWeight + ", right " + rightWeight);
+}
+
+function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
+{
+   var weights = [ 13, 13, 13, 13, 21, 21, 21, 21, 34, 34, 34, 34 ];
 	var person = peopleGroup.create(x, y, 'people');
-      person.frame = i;
-      game.physics.p2.enable(person, false);
-      person.body.clearShapes();
-      person.body.loadPolygon('peopleShapes', 'person' + i);
-      person.body.setCollisionGroup(peopleCollisionGroup);
-      person.body.collides(zeppelinCollisionGroup);
-      person.body.collides(peopleCollisionGroup);
-      person.body.damping = 0;
-      person.body.angularDamping = 0.995;
+   person.frame = i;
+   person.weight = weights[i];
+   game.physics.p2.enable(person, false);
+   person.body.clearShapes();
+   person.body.loadPolygon('peopleShapes', 'person' + i);
+   person.body.setCollisionGroup(peopleCollisionGroup);
+   person.body.collides(zeppelinCollisionGroup);
+   person.body.collides(peopleCollisionGroup);
+   person.body.damping = 0;
+   person.body.angularDamping = 0.995;
+   person.body.onBeginContact.add(personZeppelinBeginContact, this);
+   person.body.onEndContact.add(personZeppelinEndContact, this);
+}
+
+function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
+{
+   if (body == zeppelin.body) {
+      console.log(body);
+      console.log(bodyB);
+      peopleOnZeppelin.unshift(body.sprite);
+   }
+}
+
+function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
+{
+   if (body == zeppelin.body) {
+      peopleOnZeppelin.shift(body.sprite);
+   }
 }
 
 function render()
