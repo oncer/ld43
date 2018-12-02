@@ -73,6 +73,10 @@ function create ()
       person.body.collides(peopleCollisionGroup);
       person.body.damping = 0;
    }
+   
+   // create physics body for mouse which we will use for dragging clicked bodies
+   mouseBody = new p2.Body();
+   game.physics.p2.world.addBody(mouseBody);
 
    // ocean waves
    oceanGroup = game.add.group();
@@ -98,6 +102,8 @@ function update ()
    
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
+	  mouseBody.position[0] = game.physics.p2.pxmi(game.input.activePointer.position.x);
+	  mouseBody.position[1] = game.physics.p2.pxmi(game.input.activePointer.position.y);
       var clickPos = new Phaser.Point(game.physics.p2.pxmi(game.input.activePointer.position.x), game.physics.p2.pxmi(game.input.activePointer.position.y));
       if (personClicked == null) {
 		 //getObjectsUnderPointer is not in p2
@@ -106,17 +112,29 @@ function update ()
             personClicked = peopleClicked[0];
             personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
             console.log(personClicked);
+			
+			
+		    var localPointInBody = [0, 0];
+            // this function takes physicsPos and coverts it to the body's local coordinate system
+            personClicked.toLocalFrame(localPointInBody, mouseBody.position);
+        
+            // use a revoluteContraint to attach mouseBody to the clicked body
+		    mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
          }
+		 
       } else {
          //personClicked.x = clickPos.x - personClickOffset.x;
          //personClicked.y = clickPos.y - personClickOffset.y;
-		 var force = [100 * (clickPos.x - personClicked.position[0]), 100 * (clickPos.y - personClicked.position[1])];
-		 console.log(force);
-		 personClicked.applyForce(force, personClicked.x, personClicked.y);
+		 // var force = [100 * (clickPos.x - personClicked.position[0]), 100 * (clickPos.y - personClicked.position[1])];
+		 // console.log(force);
+		 // personClicked.applyForce(force, personClicked.x, personClicked.y);
+		 // personClicked.damping = 0.999;
       }
    } else {
       if (personClicked != null) {
-         //personClicked.body.reset(personClicked.x, personClicked.y);
+         // personClicked.damping = 0;
+		 //personClicked.body.reset(personClicked.x, personClicked.y);
+		 game.physics.p2.removeConstraint(mouseConstraint);
       }
 	  personClicked = null;
       clickPos = null;
