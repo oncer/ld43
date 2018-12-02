@@ -1,5 +1,5 @@
 var game = new Phaser.Game(
-   512, 288,
+   1024, 576,
    Phaser.AUTO,
    'lighter-than-air',
    this,
@@ -29,17 +29,19 @@ function create ()
 
    //864
    game.world.setBounds(0, 0, 512, 288);
+   //game.camera.bounds.setTo(512, 288);
+   game.camera.scale.setTo(2);
 
-   game.add.sprite(0, 0, 'bg');
-   propeller = game.add.sprite(-128, 20, 'propeller');
+   bgSprite = game.add.sprite(0, 0, 'bg');
+   propeller = game.add.sprite(-128, 40, 'propeller');
    propeller.animations.add('propel').play(15, true);
    zeppelin = game.add.sprite(144, 92, 'zeppelin');
-   zeppelin.addChild(propeller);
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
+   zeppelin.addChild(propeller);
    zeppelin.body.static = true;
    zeppelin.body.gravity = 0;
    zeppelin.body.clearShapes();
-   zeppelin.body.addRectangle(224, 16, 0, 64);
+   zeppelin.body.addRectangle(224, 16, 0, 64 + 32);
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
 
@@ -79,6 +81,7 @@ function create ()
 
    var deltaT = game.time.elapsed;
    var T = game.time.now;
+
 }
 
 function update ()
@@ -88,15 +91,18 @@ function update ()
    
    // time since some start point, in seconds
    T = game.time.now/1000;
+
+   var mouseX = game.input.activePointer.position.x * 0.5;
+   var mouseY = game.input.activePointer.position.y * 0.5;
    
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
-	  mouseBody.position[0] = game.physics.p2.pxmi(game.input.activePointer.position.x);
-	  mouseBody.position[1] = game.physics.p2.pxmi(game.input.activePointer.position.y);
-      var clickPos = new Phaser.Point(game.physics.p2.pxmi(game.input.activePointer.position.x), game.physics.p2.pxmi(game.input.activePointer.position.y));
+	  mouseBody.position[0] = game.physics.p2.pxmi(mouseX);
+	  mouseBody.position[1] = game.physics.p2.pxmi(mouseY);
+      var clickPos = new Phaser.Point(game.physics.p2.pxmi(mouseX), game.physics.p2.pxmi(mouseY));
       if (personClicked == null) {
 		 //getObjectsUnderPointer is not in p2
-         peopleClicked = game.physics.p2.hitTest(game.input.activePointer.position, peopleGroup.children);
+         peopleClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), peopleGroup.children);
 		 if (peopleClicked.length > 0) {
             personClicked = peopleClicked[0];
             personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
@@ -140,6 +146,7 @@ function update ()
    // update zeppelin
    zeppelin.body.moveUp(3 * Math.sin(T));
    
+   zeppelin.body.rotateRight(1);
 }
 
 function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y){
