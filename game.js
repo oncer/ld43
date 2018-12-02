@@ -11,9 +11,9 @@ function preload ()
 {
    game.load.image('bg', 'gfx/background.png');
    game.load.image('zeppelin', 'gfx/zeppelin.png');
-   game.load.image('zeppelin-floor', 'gfx/zeppelin-floor.png');
    game.load.spritesheet('propeller', 'gfx/propeller.png', 16, 64, 4);
    game.load.spritesheet('people', 'gfx/people.png', 32, 32);
+   game.load.physics('peopleShapes', 'gfx/people-shapes.json');
    game.load.spritesheet('ocean', 'gfx/ocean.png', 16, 32);
    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
@@ -36,12 +36,14 @@ function create ()
    zeppelin = game.add.sprite(18+128, 92, 'zeppelin');
    zeppelin.anchor.set(0.5, 0.5);
    zeppelin.addChild(propeller);
-   zeppelinFloor = game.add.sprite(zeppelin.x, zeppelin.y + zeppelin.height / 2 + 8, 'zeppelin-floor');
-   game.physics.enable(zeppelinFloor, Phaser.Physics.P2JS);
-   zeppelinFloor.body.static = true;
-   zeppelinFloor.body.gravity = 0;
-   zeppelinFloor.body.setCollisionGroup(zeppelinCollisionGroup);
-   zeppelinFloor.body.collides(peopleCollisionGroup);
+   game.physics.enable(zeppelin, Phaser.Physics.P2JS);
+   zeppelin.body.static = true;
+   zeppelin.body.gravity = 0;
+   zeppelin.body.clearShapes();
+   zeppelin.body.addRectangle(224, 16, 0, 56);
+   zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
+   zeppelin.body.collides(peopleCollisionGroup);
+
  
    // camera
    game.camera.follow(zeppelin);
@@ -64,6 +66,8 @@ function create ()
       person.y = 0;//zeppelin.y + zeppelin.height/2 - person.height;
       person.x = 64 + person.x % 200;
       game.physics.p2.enable(person, false);
+      person.body.clearShapes();
+      person.body.loadPolygon('peopleShapes', 'person' + i);
       person.body.setCollisionGroup(peopleCollisionGroup);
       person.body.collides(zeppelinCollisionGroup);
       person.body.collides(peopleCollisionGroup);
@@ -126,8 +130,6 @@ function update ()
 
    // update zeppelin
    //zeppelin.y += 5 * deltaT * Math.sin(T);
-   
-   //game.physics.arcade.collide(peopleGroup, zeppelinFloor);
    
 }
 
