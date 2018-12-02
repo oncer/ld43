@@ -134,6 +134,7 @@ function create ()
 	goreEmitter.makeParticles('gore', [0,1,2,3,4,5,6]);
 	goreEmitter.gravity = 200;
 	goreEmitter.maxParticles = 500;
+	goreEmitter.setXSpeed(-300,-100);
 
 
 }
@@ -510,7 +511,7 @@ function setDistanceBar(value){
 
 function personShredded(body1, body2){
 	if (body2 != null && body2.sprite != null){
-		goreEmitter.area = body2.sprite.getLocalBounds()
+		//goreEmitter.area = body2.sprite.getLocalBounds()
 		
 		goreEmitter.x = body2.x;
 		goreEmitter.y = body2.y;
