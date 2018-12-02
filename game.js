@@ -220,16 +220,18 @@ function update ()
 			}
 
 		} else {
-			if (personClicked.parent.sprite.inWater) {
-				game.physics.p2.removeConstraint(mouseConstraint);
-				personClicked = null;
-			}
 
 			// moves to the top z-layer
 			personClicked.parent.sprite.moveUp();
 			// disables collision
 			personClicked.parent.data.shapes[0].sensor = true;
 
+			
+			if (personClicked.parent.sprite.inWater) {
+				game.physics.p2.removeConstraint(mouseConstraint);
+				personClicked = null;
+			}
+			
 		}
 	} else {
 		if (personClicked != null) {
@@ -486,11 +488,12 @@ function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
 
 function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
 {
+	if (shapeA.body == null) return;
 	if (body === zeppelin.body) {
 		var person = shapeA.body.parent.sprite;
 		person.touchingZeppelin = false;
 	}
-	if (body.sprite.key == "people") {
+	if (body.sprite != null && body.sprite.key == "people") {
 		for (var i in body.sprite.touchingPeople) {
 			if (body.sprite.touchingPeople[i] === shapeA.body.parent.sprite) {
 				body.sprite.touchingPeople.splice(i, 1);
@@ -506,13 +509,15 @@ function setDistanceBar(value){
 }
 
 function personShredded(body1, body2){
-	goreEmitter.area = body2.sprite.getLocalBounds()
-	
-	goreEmitter.x = body2.x;
-	goreEmitter.y = body2.y;
-	
-	goreEmitter.start(true, 2000, null, 50);
-	//body2.sprite.destroy();
+	if (body2 != null && body2.sprite != null){
+		goreEmitter.area = body2.sprite.getLocalBounds()
+		
+		goreEmitter.x = body2.x;
+		goreEmitter.y = body2.y;
+		
+		goreEmitter.start(true, 2000, null, 20);
+		destroyPerson(body2.sprite);
+	}
 }
 
 function render()
