@@ -4,6 +4,8 @@ var goreEmmiter;
 
 var meters = 0;
 var maxDistance = 3000; // this is the distance to the final destination
+var timer = 0; // for spawning people etc.
+
 var game = new Phaser.Game(
 	1024, 576,
 	Phaser.AUTO,
@@ -34,7 +36,7 @@ function create ()
 {
 
 	game.physics.startSystem(Phaser.Physics.P2JS)
-	game.physics.p2.gravity.y = 250;
+	game.physics.p2.gravity.y = 320;
 	game.physics.p2.applyDamping = true;
 	game.physics.p2.setImpactEvents(true);
 	zeppelinCollisionGroup = game.physics.p2.createCollisionGroup();
@@ -102,8 +104,6 @@ function create ()
 
 	balloonGroup = game.add.group();
 
-	spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, 5, 500, 200);
-
 	// create physics body for mouse which we will use for dragging clicked bodies
 	mouseBody = new p2.Body();
 	game.physics.p2.world.addBody(mouseBody);
@@ -152,8 +152,8 @@ function update ()
 	if (meters < maxDistance) {
 		xVel = Math.min(xVel + .002, 1);
 	} else {
-		xVel = 0;// Math.max(xVel - .1, 0);
-
+		xVel = 0
+		
 		// ~~~ Winning Condition ~~~
 
 		// TODO: neutralize tilt, lower zeppelin, disable dragging people,....
@@ -167,9 +167,16 @@ function update ()
 		}
 	}
 	meters += xVel;
-
+	timer ++;
+	
 	setDistanceBar(meters/maxDistance);
 
+	// TODO: not spawn if winning condition is met.
+	if (timer % 360 == 0) {
+		var v = Phaser.Math.between(0, 11);
+		spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
+	}
+	
 	// mouse/touch logic
 	if (game.input.activePointer.isDown) {
 		mouseBody.position[0] = game.physics.p2.pxmi(mouseX);
@@ -251,12 +258,12 @@ function update ()
 					balloon.destroy();
 				} else {
 					balloon.frame += 1;
-					balloon.body.applyForce([0, 250/20], 0, 0);
+					balloon.body.applyForce([0, game.physics.p2.gravity.y/20], 0, 0);
 				}
 			}
 
 		} else {		   
-			balloon.body.applyForce([0.1, 250/10 + 0.01], 0, 0);
+			balloon.body.applyForce([0.1, game.physics.p2.gravity.y/10 + 0.01], 0, 0);
 		}
 	}
 
@@ -264,8 +271,11 @@ function update ()
 	oceanGroup.x = (oceanGroup.x - xVel) % game.world.width;
 	bgGroup.x = (bgGroup.x - (0.4 * xVel)) % game.world.width;
 	island_start.x -= xVel; 
-	island_end.x -= xVel; //Math.max(island_end.x - xVel, game.world.width - 256); 
-
+	island_end.x -= xVel;
+	
+	for(var b in balloonGroup.children) {
+		balloonGroup.children[b].body.moveLeft(30);
+	}
 	if (island_start.x < -256) {
 		island_start.destroy();
 	}
@@ -456,7 +466,7 @@ function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
 	return balloon;
 }
 
-function spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, i, x, y){
+function spawnPersonOnBalloon(i, x, y){
 	person = spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y);
 	balloon = spawnBalloon(balloonGroup, balloonCollisionGroup, x + 2, y - 32);
 	rope = this.game.physics.p2.createDistanceConstraint(balloon.body, person.body, 20, [0,15], [0,-1])
