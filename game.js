@@ -1,6 +1,9 @@
 var maxRotation = 0.5; // maximum rotation
 var goreEmmiter;
 
+var meters = 0;
+var maxDistance = 3000; // this is the distance to the final destination
+
 var game = new Phaser.Game(
    1024, 576,
    Phaser.AUTO,
@@ -49,7 +52,12 @@ function create ()
 
    propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
    propeller.animations.add('propel').play(15, true);
+   
+   // starting island
    island_start = game.add.sprite(0, game.world.height - 80, 'island_start');
+   // goal island
+   island_end = game.add.sprite(maxDistance + 256, game.world.height - 80, 'island_end');
+   
    zeppelin = game.add.sprite(144, game.world.height - 154, 'zeppelin');
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
    //zeppelin.addChild(propeller);
@@ -115,7 +123,7 @@ function create ()
    
    distanceBarCursor = game.add.sprite(0, 10, 'hudDistanceCursor');
    distanceBarCursor.fixedToCamera = true;
-   setDistanceBar(distanceBarCursor, 0);
+   setDistanceBar(0);
    
    // gore emmiter
    goreEmitter = game.add.emitter(0, 0, 100);
@@ -137,9 +145,28 @@ function update ()
 
    var mouseX = game.input.activePointer.position.x / game.camera.scale.y;
    var mouseY = (game.input.activePointer.position.y + game.camera.view.y) / game.camera.scale.y;
+
+   if (meters < maxDistance) {
+      xVel = Math.min(xVel + .002, 1);
+   } else {
+      xVel = 0;// Math.max(xVel - .1, 0);
+	  
+	  // ~~~ Winning Condition ~~~
+	  
+	  // TODO: neutralize tilt, lower zeppelin, disable dragging people,....
+	  
+	  game.camera.follow(null);
+	  if (zeppelin.body.x < game.world.width - 128) {
+		 zeppelin.body.x += 1;
+		 for(var i in peopleGroup.children) {
+            peopleGroup.children[i].body.x += 1;
+         }
+	  }
+   }
+   meters += xVel;
    
-   xVel = Math.min(xVel + .002, 1);
-   
+   setDistanceBar(meters/maxDistance);
+
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
 	  mouseBody.position[0] = game.physics.p2.pxmi(mouseX);
@@ -216,10 +243,11 @@ function update ()
 	   }
    }
 
-   // Scrolling
+   // ~~~ scrolling ~~~
    oceanGroup.x = (oceanGroup.x - xVel) % game.world.width;
    bgGroup.x = (bgGroup.x - (0.4 * xVel)) % game.world.width;
    island_start.x -= xVel; 
+   island_end.x -= xVel; //Math.max(island_end.x - xVel, game.world.width - 256); 
    
    if (island_start.x < -256) {
       island_start.destroy();
@@ -294,6 +322,8 @@ function updateZeppelin()
    debugText.text = "balance: " + zeppelinSumWeight.toFixed(2) + ", rotation: " + zeppelinTargetRotation.toFixed(2);
    debugText.text += "\n";
    debugText.text += "people on board: " + peopleOnZeppelin.length;
+   debugText.text += "\n";
+   debugText.text += "meters: " + meters;
 
    // do it!
    var rotationDistance = zeppelinTargetRotation - zeppelin.body.rotation;
@@ -380,7 +410,7 @@ function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
    }
 }
 
-function setDistanceBar(distanceBarCursor, value){
+function setDistanceBar(value){
 	//game.add.tween(logo2.cameraOffset).to( { y: 400 }, 2000, Phaser.Easing.Back.InOut, true, 0, 2000, true);
 	distanceBarCursor.cameraOffset.x = 376 + value * 242
 }
