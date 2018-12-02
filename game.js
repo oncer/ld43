@@ -37,7 +37,6 @@ function create ()
    bgGroup.create(0, 0, 'bg');
    bgGroup.create(512, 0, 'bg');
 
-   game.add.sprite(0, 0, 'bg');
    propeller = game.add.sprite(-128, 20, 'propeller');
    propeller.animations.add('propel').play(15, true);
    zeppelin = game.add.sprite(144, 92, 'zeppelin');
