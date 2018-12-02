@@ -56,8 +56,12 @@ function create ()
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
    
-   zeppelinTargetRotation = 0;
-   zeppelinSumWeight = 0;
+   zeppelinTargetRotation = 0; // slowly rotate to this value
+   zeppelinSumWeight = 0; // negative=tilt to left, positive=tilt to right
+   // target velocity in Y direction
+   zeppelinTargetYV = 0;
+   zeppelinWeightCapacity = 75; // could become less over time
+   peopleMass = 0;
 
  
    // camera
@@ -97,12 +101,9 @@ function create ()
       waveAnim.play(5, true);
    }
 
-   var style = { font: "14px Consolas", fill: "#ffffff", align: "center" };
+   var style = { font: "14px Consolas", fill: "#ff004c", align: "center" };
    debugText = game.add.text(256, 240, "debug text", style);
    debugText.anchor.set(0.5);
-
-   var deltaT = game.time.elapsed;
-   var T = game.time.now;
 }
 
 function update ()
@@ -235,9 +236,6 @@ function personIndirectlyTouchingZeppelin(person)
 
 function updateZeppelin()
 {
-   // constant up/down shift
-   zeppelin.body.moveUp(3 * Math.sin(T));
- 
    // determine who is on the zeppelin
    // - even indirectly, if standing on top of each other!
    peopleOnZeppelin = [];
@@ -252,9 +250,11 @@ function updateZeppelin()
    // tilt based on people's weight
    var leftWeight = 0;
    var rightWeight = 0;
+   var targetPeopleMass = 0;
    for (var i in peopleOnZeppelin)
    {
       var person = peopleOnZeppelin[i];
+      targetPeopleMass += person.weight;
       var distanceFromCenter = (person.x - zeppelin.x) / 112;
       if (distanceFromCenter < 0) {
          leftWeight -= distanceFromCenter * person.weight;
@@ -268,19 +268,40 @@ function updateZeppelin()
    } else if (zeppelinSumWeight < targetSumWeight) {
       zeppelinSumWeight = Math.min(targetSumWeight, zeppelinSumWeight + 0.5);
    }
-   var rotationScale = Math.min(1, Math.abs(zeppelinSumWeight / 30));
-   zeppelinTargetRotation = maxRotation * rotationScale * rotationScale * Math.sign(zeppelinSumWeight);
-   debugText.text = "balance: " + zeppelinSumWeight.toFixed(2) + ", rotation: " + zeppelinTargetRotation.toFixed(2);
-   debugText.text += "\n";
-   debugText.text += "people on board: " + peopleOnZeppelin.length;
 
-   // do it!
+   if (peopleMass > targetPeopleMass) {
+      peopleMass--;
+   } else if (peopleMass < targetPeopleMass) {
+      peopleMass++;
+   }
+   var rotationScale = Math.min(1, Math.abs(zeppelinSumWeight / 30));
+   zeppelinTargetRotation = maxRotation * rotationScale * Math.sign(zeppelinSumWeight);
+
+   // do the tilt!
    var rotationDistance = zeppelinTargetRotation - zeppelin.body.rotation;
    if (rotationDistance > 0) {
       zeppelin.body.rotateRight(1);
    } else if (rotationDistance < 0) {
       zeppelin.body.rotateLeft(1);
    }
+
+
+   // calculate Y velocity
+   windVelocity = 0;
+   c1 = -100;
+   c2 = 0;
+   c3 = 0;
+   zeppelinTargetYV = c1 * zeppelin.body.rotation +
+      c2 * (zeppelinWeightCapacity - peopleMass) +
+      c3 * Math.sin(T);
+
+   zeppelin.body.moveUp(zeppelinTargetYV);
+
+   debugText.text = "balance: " + zeppelinSumWeight.toFixed(2) + ", rotation: " + zeppelinTargetRotation.toFixed(2);
+   debugText.text += "\n";
+   debugText.text += "people on board: " + peopleOnZeppelin.length + ", people mass: " + peopleMass;
+   debugText.text += "\n";
+   debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2);
 }
 
 function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
