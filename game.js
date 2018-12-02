@@ -21,6 +21,7 @@ function preload ()
 
 function create ()
 {
+
    game.physics.startSystem(Phaser.Physics.P2JS)
    game.physics.p2.gravity.y = 250;
    game.physics.p2.applyDamping = true;
@@ -34,7 +35,11 @@ function create ()
    //game.camera.bounds.setTo(512, 288);
    game.camera.scale.setTo(2);
 
-   bgSprite = game.add.sprite(0, 0, 'bg');
+   // 2 bgs for scrolling
+   bgGroup = game.add.group();
+   bgGroup.create(0, 0, 'bg');
+   bgGroup.create(512, 0, 'bg');
+
    propeller = game.add.sprite(-128, 40, 'propeller');
    propeller.animations.add('propel').play(15, true);
    zeppelin = game.add.sprite(144, 92, 'zeppelin');
@@ -47,13 +52,15 @@ function create ()
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
 
+   peopleOnZeppelin = [];
+
  
    // camera
    game.camera.follow(zeppelin);
    game.camera.deadzone = new Phaser.Rectangle(16, 16, game.width - 16, game.height - zeppelin.height - 64);
    game.camera.lerpY = 0.1;
 
-   
+   xVel = 1;
 
    //zeppelin.weight = 500;
 
@@ -78,12 +85,16 @@ function create ()
    // ocean waves
    oceanGroup = game.add.group();
    var f = 0;
-   for (var x = 0; x < game.world.width; x += 16)
+   for (var x = 0; x < 2 * game.world.width; x += 16)
    {
       var wave = oceanGroup.create(x, game.world.height - 32, 'ocean');
       var waveAnim = wave.animations.add('wave');
-      waveAnim.play(10, true);
+      waveAnim.play(5, true);
    }
+
+   var style = { font: "14px Consolas", fill: "#ffffff", align: "center" };
+   debugText = game.add.text(256, 240, "debug text", style);
+   debugText.anchor.set(0.5);
 
    var deltaT = game.time.elapsed;
    var T = game.time.now;
@@ -146,12 +157,12 @@ function update ()
    } else {
       if (personClicked != null) {
          // personClicked.damping = 0;
-		 //personClicked.body.reset(personClicked.x, personClicked.y);
-		 game.physics.p2.removeConstraint(mouseConstraint);
-		 //var speed = Math.sqrt(personClicked.velocity.x*personClicked.velocity.x + personClicked.velocity.y*personClicked.velocity.y);
-		 //console.log(speed);
+         //personClicked.body.reset(personClicked.x, personClicked.y);
+         game.physics.p2.removeConstraint(mouseConstraint);
+         //var speed = Math.sqrt(personClicked.velocity.x*personClicked.velocity.x + personClicked.velocity.y*personClicked.velocity.y);
+         //console.log(speed);
       }
-	  personClicked = null;
+      personClicked = null;
       clickPos = null;
    }
 
@@ -179,13 +190,43 @@ function update ()
 	   }
    }
 
-   // update zeppelin
-   //zeppelin.body.moveUp(3 * Math.sin(T));
+   // Scrolling
+   // ocean wave movement
+   oceanGroup.x = (oceanGroup.x - xVel) % game.world.width;
+   bgGroup.x = (bgGroup.x - (0.4 * xVel)) % game.world.width;
    
-   zeppelin.body.rotateRight(1);
+   updateZeppelin();
+   
+   //zeppelin.body.rotateRight(1);
 }
 
-function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y){
+function updateZeppelin()
+{
+   // constant up/down shift
+   zeppelin.body.moveUp(3 * Math.sin(T));
+
+   // tilt based on people's weight
+   var leftWeight = 0;
+   var rightWeight = 0;
+   for (var i in peopleOnZeppelin)
+   {
+      var person = peopleOnZeppelin[i];
+      var distanceFromCenter = (person.x - zeppelin.x) / 64;
+      if (distanceFromCenter < 0) {
+         leftWeight -= distanceFromCenter * person.weight;
+      } else {
+         rightWeight += distanceFromCenter * person.weight;
+      }
+   }
+   var sumWeight = rightWeight - leftWeight;
+   debugText.text = "balance: " + sumWeight.toFixed(2);
+   debugText.text += "\n";
+   debugText.text += "people on board: " + peopleOnZeppelin.length;
+}
+
+function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
+{
+   var weights = [ 13, 13, 13, 13, 21, 21, 21, 21, 34, 34, 34, 34 ];
 	var person = peopleGroup.create(x, y, 'people');
 	person.frame = i;
 	game.physics.p2.enable(person, false);
@@ -196,9 +237,11 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 	person.body.collides(peopleCollisionGroup);
 	person.body.damping = 0;
 	person.body.angularDamping = 0.995;
+	person.weight = weights[i];
+
+	person.body.onBeginContact.add(personZeppelinBeginContact, this);
+	person.body.onEndContact.add(personZeppelinEndContact, this);
 	person.body.rope = null;
-	
-	return person
 }
 function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
 	var balloon = balloonGroup.create(x, y, 'balloon');
@@ -224,6 +267,27 @@ function spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, z
 	
 	person.body.rope = rope;
 	balloon.body.rope = rope;
+}
+
+function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
+{
+   if (body == zeppelin.body) {
+      peopleOnZeppelin.unshift(shapeA.body.parent.sprite);
+      //console.log("person " + shapeA.body.parent.sprite.frame + " entered");
+   }
+}
+
+function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
+{
+   if (body == zeppelin.body) {
+      for (var i in peopleOnZeppelin) {
+         if (peopleOnZeppelin[i] == shapeA.body.parent.sprite) {
+            peopleOnZeppelin.splice(i, 1);
+            //console.log("person " + shapeA.body.parent.sprite.frame + " left");
+            break;
+         }
+      }
+   }
 }
 
 function render()
