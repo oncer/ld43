@@ -20,6 +20,7 @@ function preload ()
 
 function create ()
 {
+
    game.physics.startSystem(Phaser.Physics.P2JS)
    game.physics.p2.gravity.y = 250;
    game.physics.p2.applyDamping = true;
@@ -37,7 +38,7 @@ function create ()
    bgGroup.create(0, 0, 'bg');
    bgGroup.create(512, 0, 'bg');
 
-   propeller = game.add.sprite(-128, 20, 'propeller');
+   propeller = game.add.sprite(-128, 40, 'propeller');
    propeller.animations.add('propel').play(15, true);
    zeppelin = game.add.sprite(144, 92, 'zeppelin');
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
@@ -84,6 +85,10 @@ function create ()
       var waveAnim = wave.animations.add('wave');
       waveAnim.play(5, true);
    }
+
+   var style = { font: "14px Consolas", fill: "#ffffff", align: "center" };
+   debugText = game.add.text(256, 240, "debug text", style);
+   debugText.anchor.set(0.5);
 
    var deltaT = game.time.elapsed;
    var T = game.time.now;
@@ -170,13 +175,17 @@ function updateZeppelin()
    for (var i in peopleOnZeppelin)
    {
       var person = peopleOnZeppelin[i];
-      var distanceFromCenter = (zeppelin.x - person.x) / 64;
+      var distanceFromCenter = (person.x - zeppelin.x) / 64;
       if (distanceFromCenter < 0) {
          leftWeight -= distanceFromCenter * person.weight;
       } else {
          rightWeight += distanceFromCenter * person.weight;
       }
    }
+   var sumWeight = rightWeight - leftWeight;
+   debugText.text = "balance: " + sumWeight.toFixed(2);
+   debugText.text += "\n";
+   debugText.text += "people on board: " + peopleOnZeppelin.length;
 }
 
 function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
@@ -201,13 +210,20 @@ function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
 {
    if (body == zeppelin.body) {
       peopleOnZeppelin.unshift(shapeA.body.parent.sprite);
+      //console.log("person " + shapeA.body.parent.sprite.frame + " entered");
    }
 }
 
 function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
 {
    if (body == zeppelin.body) {
-      peopleOnZeppelin.shift(shapeA.body.parent.sprite);
+      for (var i in peopleOnZeppelin) {
+         if (peopleOnZeppelin[i] == shapeA.body.parent.sprite) {
+            peopleOnZeppelin.splice(i, 1);
+            //console.log("person " + shapeA.body.parent.sprite.frame + " left");
+            break;
+         }
+      }
    }
 }
 
