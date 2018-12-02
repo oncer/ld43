@@ -1,5 +1,5 @@
 var maxRotation = 0.5; // maximum rotation
-
+var goreEmmiter;
 
 var game = new Phaser.Game(
    1024, 576,
@@ -36,6 +36,7 @@ function create ()
    zeppelinCollisionGroup = game.physics.p2.createCollisionGroup();
    peopleCollisionGroup = game.physics.p2.createCollisionGroup();
    balloonCollisionGroup = game.physics.p2.createCollisionGroup();
+   propellerCollisionGroup = game.physics.p2.createCollisionGroup();
    
 
    game.world.setBounds(0, 0, 512, 864);
@@ -46,18 +47,22 @@ function create ()
    bgGroup.create(0, 0, 'bg');
    bgGroup.create(512, 0, 'bg');
 
-   propeller = game.add.sprite(-128, 40, 'propeller');
+   propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
    propeller.animations.add('propel').play(15, true);
    island_start = game.add.sprite(0, game.world.height - 80, 'island_start');
    zeppelin = game.add.sprite(144, game.world.height - 154, 'zeppelin');
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
-   zeppelin.addChild(propeller);
+   //zeppelin.addChild(propeller);
    zeppelin.body.static = true;
    zeppelin.body.gravity = 0;
    zeppelin.body.clearShapes();
    zeppelin.body.addRectangle(224, 16, 0, 64 + 32);
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
+   game.physics.enable(propeller, Phaser.Physics.P2JS);
+   propeller.body.setCollisionGroup(propellerCollisionGroup);
+   propeller.body.collides(peopleCollisionGroup);
+   game.physics.p2.createLockConstraint(zeppelin.body, propeller.body, [144-26, 80-154]);
    
    zeppelinTargetRotation = 0;
    zeppelinSumWeight = 0;
@@ -113,9 +118,9 @@ function create ()
    setDistanceBar(distanceBarCursor, 0);
    
    // gore emmiter
-   emitter.makeParticles('gore');
-   emitter.gravity = 200;
-   emitter.x
+   goreEmitter = game.add.emitter(0, 0, 100);
+   goreEmitter.makeParticles('gore');
+   goreEmitter.gravity = 200;
 
    
    var deltaT = game.time.elapsed;
@@ -312,6 +317,7 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 	person.body.setCollisionGroup(peopleCollisionGroup);
 	person.body.collides(zeppelinCollisionGroup);
 	person.body.collides(peopleCollisionGroup);
+	person.body.collides(propellerCollisionGroup);
 	person.body.damping = 0;
 	person.body.angularDamping = 0.995;
 	person.weight = weights[i];
@@ -381,14 +387,14 @@ function setDistanceBar(distanceBarCursor, value){
 
 function goreBurst(x, y) {
     //  Position the emitter where the mouse/touch event was
-    emitter.x = x;
-    emitter.y = y;
+    goreEmitter.x = x;
+    goreEmitter.y = y;
 
     //  The first parameter sets the effect to "explode" which means all particles are emitted at once
     //  The second gives each particle a 2000ms lifespan
     //  The third is ignored when using burst/explode mode
     //  The final parameter (10) is how many particles will be emitted in this single burst
-    emitter.start(true, 2000, null, 10);
+    goreEmitter.start(true, 2000, null, 10);
 }
 
 function render()
