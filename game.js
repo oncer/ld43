@@ -105,11 +105,13 @@ function create ()
    debugText.anchor.set(0.5);
 
    // HUD
-   distanceBar = game.add.sprite(512-128, 520, 'hudDistance');
+   distanceBar = game.add.sprite(384, 10, 'hudDistance');
    distanceBar.fixedToCamera = true;
    
-   distanceBarCursor = game.add.sprite(512-128, 520, 'hudDistanceCursor');
+   distanceBarCursor = game.add.sprite(0, 10, 'hudDistanceCursor');
    distanceBarCursor.fixedToCamera = true;
+   setDistanceBar(distanceBarCursor, 0);
+   
    
    var deltaT = game.time.elapsed;
    var T = game.time.now;
@@ -219,6 +221,7 @@ function update ()
    
    debugText.y = 240 + game.camera.view.y / game.camera.scale.y; 
    //zeppelin.body.rotateRight(1);
+   
 }
 
 function updateZeppelin()
@@ -325,6 +328,11 @@ function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
          }
       }
    }
+}
+
+function setDistanceBar(distanceBarCursor, value){
+	//game.add.tween(logo2.cameraOffset).to( { y: 400 }, 2000, Phaser.Easing.Back.InOut, true, 0, 2000, true);
+	distanceBarCursor.cameraOffset.x = 376 + value * 242
 }
 
 function render()
