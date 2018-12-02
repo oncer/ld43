@@ -19,7 +19,7 @@ function preload ()
    game.load.physics('peopleShapes', 'gfx/people-shapes.json');
    game.load.spritesheet('ocean', 'gfx/ocean.png', 16, 32);
    game.load.spritesheet('balloon', 'gfx/balloon.png', 32, 32);
-   //game.load.spritesheet('hudDistance', 'gfx/hud_distance.png');
+   game.load.spritesheet('hudDistance', 'gfx/hud_distance_bar.png', 128, 16);
    game.load.spritesheet('hudDistanceCursor', 'gfx/hud_distance_cursor.png', 16, 16);
    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
@@ -102,6 +102,13 @@ function create ()
    debugText = game.add.text(256, 240, "debug text", style);
    debugText.anchor.set(0.5);
 
+   // HUD
+   distanceBar = game.add.sprite(512-128, 520, 'hudDistance');
+   distanceBar.fixedToCamera = true;
+   
+   distanceBarCursor = game.add.sprite(512-128, 520, 'hudDistanceCursor');
+   distanceBarCursor.fixedToCamera = true;
+   
    var deltaT = game.time.elapsed;
    var T = game.time.now;
 }
@@ -191,7 +198,7 @@ function update ()
 		   }
 		   
 	   } else {		   
-	       balloon.body.applyForce([1, 250/10 + 0.01], 0, 0);
+	       balloon.body.applyForce([0.1, 250/10 + 0.01], 0, 0);
 	   }
    }
 
