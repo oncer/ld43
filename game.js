@@ -238,10 +238,11 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 	person.body.damping = 0;
 	person.body.angularDamping = 0.995;
 	person.weight = weights[i];
-
 	person.body.onBeginContact.add(personZeppelinBeginContact, this);
 	person.body.onEndContact.add(personZeppelinEndContact, this);
 	person.body.rope = null;
+	
+	return person;
 }
 function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
 	var balloon = balloonGroup.create(x, y, 'balloon');
@@ -257,7 +258,7 @@ function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
 	balloon.body.rope = null;
 	balloon.popped = false;
 	
-	return balloon
+	return balloon;
 }
 
 function spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, i, x, y){
