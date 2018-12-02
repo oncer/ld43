@@ -21,7 +21,7 @@ function preload ()
 function create ()
 {
    game.physics.startSystem(Phaser.Physics.P2JS)
-   game.physics.p2.gravity.y = 100;
+   game.physics.p2.gravity.y = 250;
    game.physics.p2.applyDamping = true;
    zeppelinCollisionGroup = game.physics.p2.createCollisionGroup();
    peopleCollisionGroup = game.physics.p2.createCollisionGroup();
@@ -33,14 +33,13 @@ function create ()
    game.add.sprite(0, 0, 'bg');
    propeller = game.add.sprite(-128, 20, 'propeller');
    propeller.animations.add('propel').play(15, true);
-   zeppelin = game.add.sprite(18+128, 92, 'zeppelin');
-   zeppelin.anchor.set(0.5, 0.5);
+   zeppelin = game.add.sprite(144, 92, 'zeppelin');
    zeppelin.addChild(propeller);
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
    zeppelin.body.static = true;
    zeppelin.body.gravity = 0;
    zeppelin.body.clearShapes();
-   zeppelin.body.addRectangle(224, 16, 0, 56);
+   zeppelin.body.addRectangle(224, 16, 0, 64);
    zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
    zeppelin.body.collides(peopleCollisionGroup);
 
@@ -72,6 +71,7 @@ function create ()
       person.body.collides(zeppelinCollisionGroup);
       person.body.collides(peopleCollisionGroup);
       person.body.damping = 0;
+      person.body.angularDamping = 0.995;
    }
    
    // create physics body for mouse which we will use for dragging clicked bodies
