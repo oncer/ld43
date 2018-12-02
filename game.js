@@ -16,6 +16,7 @@ function preload ()
    game.load.physics('peopleShapes', 'gfx/people-shapes.json');
    game.load.spritesheet('ocean', 'gfx/ocean.png', 16, 32);
    game.load.spritesheet('balloon', 'gfx/balloon.png', 32, 32);
+   game.load.spritesheet('hudDistance', 'gfx/hud_distance.png');
    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
 
@@ -76,7 +77,7 @@ function create ()
    
    balloonGroup = game.add.group();
    
-   spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, 5, 300, 200);
+   spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, 5, 500, 200);
    
    // create physics body for mouse which we will use for dragging clicked bodies
    mouseBody = new p2.Body();
@@ -186,7 +187,7 @@ function update ()
 		   }
 		   
 	   } else {		   
-	       balloon.body.applyForce([0, 250/10 + 0.01], 0, 0);
+	       balloon.body.applyForce([-10, 250/10 + 0.01], 0, 0);
 	   }
    }
 
