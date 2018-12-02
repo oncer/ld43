@@ -1,3 +1,6 @@
+var maxRotation = 0.5; // maximum rotation
+
+
 var game = new Phaser.Game(
    1024, 576,
    Phaser.AUTO,
@@ -28,8 +31,7 @@ function create ()
    peopleCollisionGroup = game.physics.p2.createCollisionGroup();
 
 
-   //864
-   game.world.setBounds(0, 0, 512, 288);
+   game.world.setBounds(0, 0, 512, 864);
    //game.camera.bounds.setTo(512, 288);
    game.camera.scale.setTo(2);
 
@@ -40,7 +42,7 @@ function create ()
 
    propeller = game.add.sprite(-128, 40, 'propeller');
    propeller.animations.add('propel').play(15, true);
-   zeppelin = game.add.sprite(144, 92, 'zeppelin');
+   zeppelin = game.add.sprite(144, 192, 'zeppelin');
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
    zeppelin.addChild(propeller);
    zeppelin.body.static = true;
@@ -51,6 +53,8 @@ function create ()
    zeppelin.body.collides(peopleCollisionGroup);
 
    peopleOnZeppelin = [];
+   zeppelinTargetRotation = 0;
+   zeppelinSumWeight = 0;
 
  
    // camera
@@ -92,7 +96,6 @@ function create ()
 
    var deltaT = game.time.elapsed;
    var T = game.time.now;
-
 }
 
 function update ()
@@ -103,8 +106,8 @@ function update ()
    // time since some start point, in seconds
    T = game.time.now/1000;
 
-   var mouseX = game.input.activePointer.position.x * 0.5;
-   var mouseY = game.input.activePointer.position.y * 0.5;
+   var mouseX = game.input.activePointer.position.x / game.camera.scale.y;
+   var mouseY = (game.input.activePointer.position.y + game.camera.view.y) / game.camera.scale.y;
    
    // mouse/touch logic
    if (game.input.activePointer.isDown) {
@@ -161,6 +164,7 @@ function update ()
    
    updateZeppelin();
    
+   debugText.y = 240 + game.camera.view.y / game.camera.scale.y; 
    //zeppelin.body.rotateRight(1);
 }
 
@@ -175,17 +179,32 @@ function updateZeppelin()
    for (var i in peopleOnZeppelin)
    {
       var person = peopleOnZeppelin[i];
-      var distanceFromCenter = (person.x - zeppelin.x) / 64;
+      var distanceFromCenter = (person.x - zeppelin.x) / 112;
       if (distanceFromCenter < 0) {
          leftWeight -= distanceFromCenter * person.weight;
       } else {
          rightWeight += distanceFromCenter * person.weight;
       }
    }
-   var sumWeight = rightWeight - leftWeight;
-   debugText.text = "balance: " + sumWeight.toFixed(2);
+   var targetSumWeight = rightWeight - leftWeight;
+   if (zeppelinSumWeight > targetSumWeight) {
+      zeppelinSumWeight = Math.max(targetSumWeight, zeppelinSumWeight - 0.5);
+   } else if (zeppelinSumWeight < targetSumWeight) {
+      zeppelinSumWeight = Math.min(targetSumWeight, zeppelinSumWeight + 0.5);
+   }
+   var rotationScale = Math.min(1, Math.abs(zeppelinSumWeight / 30));
+   zeppelinTargetRotation = maxRotation * rotationScale * rotationScale * Math.sign(zeppelinSumWeight);
+   debugText.text = "balance: " + zeppelinSumWeight.toFixed(2) + ", rotation: " + zeppelinTargetRotation.toFixed(2);
    debugText.text += "\n";
    debugText.text += "people on board: " + peopleOnZeppelin.length;
+
+   // do it!
+   var rotationDistance = zeppelinTargetRotation - zeppelin.body.rotation;
+   if (rotationDistance > 0) {
+      zeppelin.body.rotateRight(1);
+   } else if (rotationDistance < 0) {
+      zeppelin.body.rotateLeft(1);
+   }
 }
 
 function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
