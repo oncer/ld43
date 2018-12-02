@@ -51,13 +51,13 @@ function create ()
 	bgGroup.create(0, 0, 'bg');
 	bgGroup.create(512, 0, 'bg');
 
-	propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
-	propeller.animations.add('propel').play(15, true);
-
 	// starting island
 	island_start = game.add.sprite(0, game.world.height - 80, 'island_start');
 	// goal island
 	island_end = game.add.sprite(maxDistance + 256, game.world.height - 80, 'island_end');
+
+	propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
+	propeller.animations.add('propel').play(15, true);
 
 	zeppelin = game.add.sprite(144, game.world.height - 154, 'zeppelin');
 	game.physics.enable(zeppelin, Phaser.Physics.P2JS);
@@ -179,20 +179,28 @@ function update ()
 			//getObjectsUnderPointer is not in p2
 			peopleClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), peopleGroup.children);
 			if (peopleClicked.length > 0) {
-				personClicked = peopleClicked[0];
-				//personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
-				console.log(personClicked);
+				for (var i in peopleClicked) {
+					if (!peopleClicked[i].parent.sprite.inWater) {
+						personClicked = peopleClicked[i];
+						break;
+					}
+				}
+				if (personClicked != null) {
+					//personClicked = peopleClicked[0];
+					//personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
+					console.log(personClicked);
 
-				var localPointInBody = [0, 0];
-				// this function takes physicsPos and coverts it to the body's local coordinate system
-				personClicked.toLocalFrame(localPointInBody, mouseBody.position);
-				// use a revoluteContraint to attach mouseBody to the clicked body
-				mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
+					var localPointInBody = [0, 0];
+					// this function takes physicsPos and coverts it to the body's local coordinate system
+					personClicked.toLocalFrame(localPointInBody, mouseBody.position);
+					// use a revoluteContraint to attach mouseBody to the clicked body
+					mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
 
-				console.log(personClicked.parent.rope);
-				if (personClicked.parent.rope != null){
-					game.physics.p2.removeConstraint(personClicked.parent.rope);
-					delete personClicked.parent.rope;
+					console.log(personClicked.parent.rope);
+					if (personClicked.parent.rope != null){
+						game.physics.p2.removeConstraint(personClicked.parent.rope);
+						delete personClicked.parent.rope;
+					}
 				}
 			}
 			balloonClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), balloonGroup.children);
@@ -205,18 +213,22 @@ function update ()
 			}
 
 		} else {
-			//personClicked.x = clickPos.x - personClickOffset.x;
-			//personClicked.y = clickPos.y - personClickOffset.y;
-			// var force = [100 * (clickPos.x - personClicked.position[0]), 100 * (clickPos.y - personClicked.position[1])];
-			// console.log(force);
-			// personClicked.applyForce(force, personClicked.x, personClicked.y);
-			// personClicked.damping = 0.999;
+			if (personClicked.parent.sprite.inWater) {
+				game.physics.p2.removeConstraint(mouseConstraint);
+				personClicked = null;
+			}
+
+			// moves to the top z-layer
+			personClicked.parent.sprite.moveUp();
+			// disables collision
+			personClicked.parent.data.shapes[0].sensor = true;
+
 		}
 	} else {
 		if (personClicked != null) {
-			// personClicked.damping = 0;
-			//personClicked.body.reset(personClicked.x, personClicked.y);
 			game.physics.p2.removeConstraint(mouseConstraint);
+			// enables collision again
+			personClicked.parent.data.shapes[0].sensor = false;
 		}
 		personClicked = null;
 		clickPos = null;
@@ -257,6 +269,7 @@ function update ()
 	}
 
 	updateZeppelin();
+	updateWaterCurrent();
 
 	debugText.y = 240 + game.camera.view.y / game.camera.scale.y; 
 	//zeppelin.body.rotateRight(1);
@@ -360,6 +373,25 @@ function updateZeppelin()
 	debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2);
 }
 
+function updateWaterCurrent()
+{
+	for (var i in peopleGroup.children)
+	{
+		var person = peopleGroup.children[i];
+		if (person.body.y > game.world.bounds.height - 32) {
+			person.inWater = true;
+			person.body.moveLeft(100);
+			if (person.body.y > game.world.bounds.height - 48) {
+				// prevent person from disappearing
+				person.body.moveUp(10);
+			}
+		} else {
+			person.inWater = false;
+		}
+	}
+
+}
+
 function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
 {
 	var weights = [ 13, 13, 13, 13, 21, 21, 21, 21, 34, 34, 34, 34 ];
@@ -367,6 +399,7 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 	person.frame = i;
 	person.touchingZeppelin = false;
 	person.touchingPeople = []
+	person.inWater = false;
 	game.physics.p2.enable(person, false);
 	person.body.clearShapes();
 	person.body.loadPolygon('peopleShapes', 'person' + i);
@@ -383,6 +416,27 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 
 	return person;
 }
+
+function destroyPerson(person)
+{
+	// make sure the person is not referenced anymore
+	for (var i in peopleGroup.children)
+	{
+		var otherPerson = peopleGroup.children[i];
+		for (var j in otherPerson.touchingPeople) {
+			if (otherPerson.touchingPeople[j] === person) {
+				otherPerson.touchingPeople.splice(j, 1);
+			}
+		}
+	}
+	if (personClicked.parent.sprite === person) {
+		game.physics.p2.removeConstraint(mouseConstraint);
+		personClicked = null;
+	}
+
+	person.destroy();
+}
+
 function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
 	var balloon = balloonGroup.create(x, y, 'balloon');
 	balloon.frame = 0;
