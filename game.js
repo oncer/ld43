@@ -60,18 +60,7 @@ function create ()
    //peopleGroup.enableBody = true;
    //peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
    for (var i = 0; i < 4; i++) {
-      var person = peopleGroup.create(i * 32, 0, 'people');
-      person.frame = i;
-      person.y = 0;//zeppelin.y + zeppelin.height/2 - person.height;
-      person.x = 64 + person.x % 200;
-      game.physics.p2.enable(person, false);
-      person.body.clearShapes();
-      person.body.loadPolygon('peopleShapes', 'person' + i);
-      person.body.setCollisionGroup(peopleCollisionGroup);
-      person.body.collides(zeppelinCollisionGroup);
-      person.body.collides(peopleCollisionGroup);
-      person.body.damping = 0;
-      person.body.angularDamping = 0.995;
+      spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, 64 + i*32, 0)
    }
    
    // create physics body for mouse which we will use for dragging clicked bodies
@@ -135,6 +124,8 @@ function update ()
          // personClicked.damping = 0;
 		 //personClicked.body.reset(personClicked.x, personClicked.y);
 		 game.physics.p2.removeConstraint(mouseConstraint);
+		 //var speed = Math.sqrt(personClicked.velocity.x*personClicked.velocity.x + personClicked.velocity.y*personClicked.velocity.y);
+		 //console.log(speed);
       }
 	  personClicked = null;
       clickPos = null;
@@ -147,8 +138,21 @@ function update ()
    }
 
    // update zeppelin
-   //zeppelin.y += 5 * deltaT * Math.sin(T);
+   zeppelin.body.moveUp(3 * Math.sin(T));
    
+}
+
+function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y){
+	var person = peopleGroup.create(x, y, 'people');
+      person.frame = i;
+      game.physics.p2.enable(person, false);
+      person.body.clearShapes();
+      person.body.loadPolygon('peopleShapes', 'person' + i);
+      person.body.setCollisionGroup(peopleCollisionGroup);
+      person.body.collides(zeppelinCollisionGroup);
+      person.body.collides(peopleCollisionGroup);
+      person.body.damping = 0;
+      person.body.angularDamping = 0.995;
 }
 
 function render()
