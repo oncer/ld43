@@ -21,6 +21,7 @@ function preload ()
    game.load.spritesheet('balloon', 'gfx/balloon.png', 32, 32);
    game.load.spritesheet('hudDistance', 'gfx/hud_distance_bar.png', 128, 16);
    game.load.spritesheet('hudDistanceCursor', 'gfx/hud_distance_cursor.png', 16, 16);
+   game.load.spritesheet('gore', 'gfx/gore.png', 16, 16);
    game.load.image('island_start', 'gfx/island_start.png');
    game.load.image('island_end', 'gfx/island_end.png');
    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
@@ -111,6 +112,11 @@ function create ()
    distanceBarCursor.fixedToCamera = true;
    setDistanceBar(distanceBarCursor, 0);
    
+   // gore emmiter
+   emitter.makeParticles('gore');
+   emitter.gravity = 200;
+   emitter.x
+
    
    var deltaT = game.time.elapsed;
    var T = game.time.now;
@@ -176,8 +182,6 @@ function update ()
          // personClicked.damping = 0;
          //personClicked.body.reset(personClicked.x, personClicked.y);
          game.physics.p2.removeConstraint(mouseConstraint);
-         //var speed = Math.sqrt(personClicked.velocity.x*personClicked.velocity.x + personClicked.velocity.y*personClicked.velocity.y);
-         //console.log(speed);
       }
       personClicked = null;
       clickPos = null;
@@ -373,6 +377,18 @@ function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
 function setDistanceBar(distanceBarCursor, value){
 	//game.add.tween(logo2.cameraOffset).to( { y: 400 }, 2000, Phaser.Easing.Back.InOut, true, 0, 2000, true);
 	distanceBarCursor.cameraOffset.x = 376 + value * 242
+}
+
+function goreBurst(x, y) {
+    //  Position the emitter where the mouse/touch event was
+    emitter.x = x;
+    emitter.y = y;
+
+    //  The first parameter sets the effect to "explode" which means all particles are emitted at once
+    //  The second gives each particle a 2000ms lifespan
+    //  The third is ignored when using burst/explode mode
+    //  The final parameter (10) is how many particles will be emitted in this single burst
+    emitter.start(true, 2000, null, 10);
 }
 
 function render()
