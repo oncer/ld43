@@ -34,6 +34,11 @@ function create ()
 
    bgSprite = game.add.sprite(0, 0, 'bg');
    propeller = game.add.sprite(-128, 40, 'propeller');
+   
+   // 2 bgs for scrolling
+   bgGroup = game.add.group();
+   bgGroup.create(0, 0, 'bg');
+   bgGroup.create(512, 0, 'bg');
    propeller.animations.add('propel').play(15, true);
    zeppelin = game.add.sprite(144, 92, 'zeppelin');
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
@@ -53,7 +58,7 @@ function create ()
    game.camera.deadzone = new Phaser.Rectangle(16, 16, game.width - 16, game.height - zeppelin.height - 64);
    game.camera.lerpY = 0.1;
 
-   
+   xVel = 1;
 
    //zeppelin.weight = 500;
 
@@ -74,11 +79,11 @@ function create ()
    // ocean waves
    oceanGroup = game.add.group();
    var f = 0;
-   for (var x = 0; x < game.world.width; x += 16)
+   for (var x = 0; x < 2 * game.world.width; x += 16)
    {
       var wave = oceanGroup.create(x, game.world.height - 32, 'ocean');
       var waveAnim = wave.animations.add('wave');
-      waveAnim.play(10, true);
+      waveAnim.play(5, true);
    }
 
    var deltaT = game.time.elapsed;
