@@ -32,13 +32,13 @@ function create ()
    //game.camera.bounds.setTo(512, 288);
    game.camera.scale.setTo(2);
 
-   bgSprite = game.add.sprite(0, 0, 'bg');
-   propeller = game.add.sprite(-128, 40, 'propeller');
-   
    // 2 bgs for scrolling
    bgGroup = game.add.group();
    bgGroup.create(0, 0, 'bg');
    bgGroup.create(512, 0, 'bg');
+
+   game.add.sprite(0, 0, 'bg');
+   propeller = game.add.sprite(-128, 20, 'propeller');
    propeller.animations.add('propel').play(15, true);
    zeppelin = game.add.sprite(144, 92, 'zeppelin');
    game.physics.enable(zeppelin, Phaser.Physics.P2JS);
@@ -149,6 +149,11 @@ function update ()
       var person = peopleGroup.children[i];
       // ...
    }
+
+   // Scrolling
+   // ocean wave movement
+   oceanGroup.x = (oceanGroup.x - xVel) % game.world.width;
+   bgGroup.x = (bgGroup.x - (0.4 * xVel)) % game.world.width;
    
    updateZeppelin();
    
