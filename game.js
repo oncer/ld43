@@ -15,6 +15,7 @@ function preload ()
    game.load.spritesheet('people', 'gfx/people.png', 32, 32);
    game.load.physics('peopleShapes', 'gfx/people-shapes.json');
    game.load.spritesheet('ocean', 'gfx/ocean.png', 16, 32);
+   game.load.spritesheet('balloon', 'gfx/balloon.png', 32, 32);
    game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
 
@@ -25,7 +26,8 @@ function create ()
    game.physics.p2.applyDamping = true;
    zeppelinCollisionGroup = game.physics.p2.createCollisionGroup();
    peopleCollisionGroup = game.physics.p2.createCollisionGroup();
-
+   balloonCollisionGroup = game.physics.p2.createCollisionGroup();
+   
 
    //864
    game.world.setBounds(0, 0, 512, 288);
@@ -62,8 +64,12 @@ function create ()
    //peopleGroup.enableBody = true;
    //peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
    for (var i = 0; i < 4; i++) {
-      spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, 64 + i*32, 0)
+      spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, 64 + i*32, 0);
    }
+   
+   balloonGroup = game.add.group();
+   
+   spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, 5, 300, 200);
    
    // create physics body for mouse which we will use for dragging clicked bodies
    mouseBody = new p2.Body();
@@ -105,17 +111,29 @@ function update ()
          peopleClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), peopleGroup.children);
 		 if (peopleClicked.length > 0) {
             personClicked = peopleClicked[0];
-            personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
+            //personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
             console.log(personClicked);
-			
 			
 		    var localPointInBody = [0, 0];
             // this function takes physicsPos and coverts it to the body's local coordinate system
             personClicked.toLocalFrame(localPointInBody, mouseBody.position);
-        
             // use a revoluteContraint to attach mouseBody to the clicked body
 		    mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
+			
+			console.log(personClicked.parent.rope);
+			if (personClicked.parent.rope != null){
+			   game.physics.p2.removeConstraint(personClicked.parent.rope);
+			   delete personClicked.parent.rope;
+			}
          }
+		 balloonClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), balloonGroup.children);
+		 if (balloonClicked.length > 0){
+			 balloon = balloonClicked[0];
+			 game.physics.p2.removeConstraint(balloon.parent.rope);
+			 delete balloon.parent.rope;
+			 balloon.parent.sprite.popped = true;
+			 balloon.parent.sprite.popTime = T;
+		 }
 		 
       } else {
          //personClicked.x = clickPos.x - personClickOffset.x;
@@ -142,24 +160,70 @@ function update ()
       var person = peopleGroup.children[i];
       // ...
    }
+   
+   // update balloons
+   for (var b in balloonGroup.children) {
+	   var balloon = balloonGroup.children[b];
+	   if (balloon.popped){
+		   if ((T - balloon.popTime)*30 > balloon.frame){
+			   if (balloon.frame == 3){
+				   balloon.destroy();
+			   } else {
+				   balloon.frame += 1;
+				   balloon.body.applyForce([0, 250/20], 0, 0);
+			   }
+		   }
+		   
+	   } else {		   
+	       balloon.body.applyForce([0, 250/10 + 0.01], 0, 0);
+	   }
+   }
 
    // update zeppelin
-   zeppelin.body.moveUp(3 * Math.sin(T));
+   //zeppelin.body.moveUp(3 * Math.sin(T));
    
    zeppelin.body.rotateRight(1);
 }
 
 function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y){
 	var person = peopleGroup.create(x, y, 'people');
-      person.frame = i;
-      game.physics.p2.enable(person, false);
-      person.body.clearShapes();
-      person.body.loadPolygon('peopleShapes', 'person' + i);
-      person.body.setCollisionGroup(peopleCollisionGroup);
-      person.body.collides(zeppelinCollisionGroup);
-      person.body.collides(peopleCollisionGroup);
-      person.body.damping = 0;
-      person.body.angularDamping = 0.995;
+	person.frame = i;
+	game.physics.p2.enable(person, false);
+	person.body.clearShapes();
+	person.body.loadPolygon('peopleShapes', 'person' + i);
+	person.body.setCollisionGroup(peopleCollisionGroup);
+	person.body.collides(zeppelinCollisionGroup);
+	person.body.collides(peopleCollisionGroup);
+	person.body.damping = 0;
+	person.body.angularDamping = 0.995;
+	person.body.rope = null;
+	
+	return person
+}
+function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
+	var balloon = balloonGroup.create(x, y, 'balloon');
+	balloon.frame = 0;
+	game.physics.p2.enable(balloon, false);
+	balloon.body.setCollisionGroup(balloonCollisionGroup);
+	//balloon.body.gravity = -260;
+	
+	//balloon.body.collides(zeppelinCollisionGroup);
+	//balloon.body.collides(peopleCollisionGroup);
+	balloon.damping = 0.999;
+	balloon.angularDamping = 0.995;
+	balloon.body.rope = null;
+	balloon.popped = false;
+	
+	return balloon
+}
+
+function spawnPersonOnBalloon(peopleGroup, balloonGroup, peopleCollisionGroup, zeppelinCollisionGroup, balloonCollisionGroup, i, x, y){
+	person = spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y);
+	balloon = spawnBalloon(balloonGroup, balloonCollisionGroup, x + 2, y - 32);
+	rope = this.game.physics.p2.createDistanceConstraint(balloon.body, person.body, 20, [0,15], [0,-1])
+	
+	person.body.rope = rope;
+	balloon.body.rope = rope;
 }
 
 function render()
