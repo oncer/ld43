@@ -206,7 +206,7 @@ startGame()
 	this.npePerson = this.spawnPersonOnBalloon(8, 530, 680);
 
 	var tween = game.add.tween(this.titleScreen)
-	tween.to( { alpha: 0 }, 3000, Phaser.Easing.Exponential.In, true, 0, 0, false);
+	tween.to( { alpha: 0 }, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
 	tween.onComplete.add(this.showStartScreen2, this);
 
 	this.propeller.animations.add('propel').play(15, true);
