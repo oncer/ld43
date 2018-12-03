@@ -1,10 +1,12 @@
-//TODO: lose screen
+//TODO: start on click
+//TODO: fadein/out für restart
 //XXX: mehrere ballons pro person
 
 class GameState extends Phaser.State
 {
 preload ()
 {
+	this.start = false; // click to start - if false, the zeppelin will not fly and nothing else will happen
 	this.winScreen = null;
 	this.loseScreen = null;
 	this.initialZeppelinWeightCapacity = 150; // could become less over time
@@ -78,10 +80,7 @@ create ()
 	// goal island
 	this.island_end = game.add.sprite(this.maxDistance + 256, game.world.height - 80, 'island_end');
 
-	this.propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
-	this.propeller.animations.add('propel').play(15, true);
-
-	this.zeppelin = game.add.sprite(164, this.zeppelinLandY - 4, 'zeppelin');
+	this.zeppelin = game.add.sprite(164, this.zeppelinLandY, 'zeppelin');
 	game.physics.enable(this.zeppelin, Phaser.Physics.P2JS);
 	//zeppelin.addChild(propeller);
 	this.zeppelin.body.static = true;
@@ -90,6 +89,8 @@ create ()
 	this.zeppelin.body.addRectangle(224, 16, 0, 64 + 32);
 	this.zeppelin.body.setCollisionGroup(this.zeppelinCollisionGroup);
 	this.zeppelin.body.collides([this.peopleCollisionGroup, this.mineCollisionGroup, this.birdCollisionGroup]);
+	this.propeller = game.add.sprite(this.zeppelin.body.x - 118, this.zeppelin.body.y + 74, 'propeller');
+
 	game.physics.enable(this.propeller, Phaser.Physics.P2JS);
 	this.propeller.body.clearShapes();
 	this.propeller.body.addRectangle(5, 60, -4, 0);
@@ -176,9 +177,7 @@ create ()
 	this.goreEmitter.makeParticles('gore', [0,1,2,3,4,5,6], 300);
 	this.goreEmitter.gravity = 200;
 	this.goreEmitter.setXSpeed(-300,-100);
-	
-	// NPE
-	this.npePerson = this.spawnPersonOnBalloon(8, 530, 680);
+
 	//start screen
 	this.showStartScreen();
 	
@@ -191,6 +190,19 @@ create ()
 	this.birdSound = game.add.audio('birdSound');
 }
 
+startGame()
+{
+	this.start = true;
+	// NPE
+	this.npePerson = this.spawnPersonOnBalloon(8, 530, 680);
+
+	var tween = game.add.tween(this.titleScreen)
+	tween.to( { alpha: 0 }, 3000, Phaser.Easing.Exponential.In, true, 0, 0, false);
+	tween.onComplete.add(this.showStartScreen2, this);
+
+	this.propeller.animations.add('propel').play(15, true);
+}
+
 update ()
 {
 	// time since last frame, in seconds
@@ -199,35 +211,41 @@ update ()
 	// time since some start point, in seconds
 	this.T = game.time.now/1000;
 
+	if (!this.start && game.input.activePointer.justPressed()) {
+		this.startGame();
+	}
+
 	var mouseX = game.input.activePointer.position.x / game.camera.scale.y;
 	var mouseY = (game.input.activePointer.position.y + game.camera.view.y) / game.camera.scale.y;
 
-	if (this.zeroPeopleTimer >= this.zeroPeopleTimeout) {
-		this.xVel = Math.max(this.xVel - .002, 0);
-	} else if (this.meters < this.maxDistance) {
-		this.xVel = Math.min(this.xVel + .002, 1);
-	} else {
-		this.xVel = 0
-		
-		// ~~~ Winning Condition ~~~
-		if (this.zeppelin.body.x < game.world.width - 128) {
-			this.zeppelin.body.x += 1;
-			for(var i in this.peopleGroup.children) {
-				this.peopleGroup.children[i].body.x += 1;
-			}
+	if (this.start) {
+		if (this.zeroPeopleTimer >= this.zeroPeopleTimeout) {
+			this.xVel = Math.max(this.xVel - .002, 0);
+		} else if (this.meters < this.maxDistance) {
+			this.xVel = Math.min(this.xVel + .002, 1);
 		} else {
-			if (this.zeppelin.body.y >= this.zeppelinLandY - 0.1 && Math.abs(this.zeppelin.body.rotation) < 0.00001 && winScreen == null) {
-				showWinScreen();
+			this.xVel = 0
+			
+			// ~~~ Winning Condition ~~~
+			if (this.zeppelin.body.x < game.world.width - 128) {
+				this.zeppelin.body.x += 1;
+				for(var i in this.peopleGroup.children) {
+					this.peopleGroup.children[i].body.x += 1;
+				}
+			} else {
+				if (this.zeppelin.body.y >= this.zeppelinLandY - 0.1 && Math.abs(this.zeppelin.body.rotation) < 0.00001 && this.winScreen == null) {
+					this.showWinScreen();
+				}
+				game.physics.p2.friction = 1;
 			}
-			game.physics.p2.friction = 1;
 		}
+		this.meters += this.xVel;
+		this.timer ++;
 	}
-	this.meters += this.xVel;
-	this.timer ++;
 	
 	this.setDistanceBar(this.meters/this.maxDistance);
 
-	if (this.meters < this.maxDistance && this.timer % 360 == 0 && this.xVel > 0 && this.npePerson == null) {
+	if (this.meters < this.maxDistance && this.timer > 0 && this.timer % 360 == 0 && this.xVel > 0 && this.npePerson == null) {
 		var v = Phaser.Math.between(0, 11);
 		var typesNotOnZeppelin = [];
 		for (var i = 0; i < 12; i++) {
@@ -247,7 +265,7 @@ update ()
 		}
 	}
 	
-	if (this.meters < this.maxDistance && this.npePerson == null && this.timer % 300 == 0 && Math.random() < 0.5) {
+	if (this.meters < this.maxDistance && this.npePerson == null && this.timer > 0 && this.timer % 300 == 0 && this.npePerson == null && Math.random() < 0.5) {
 		this.spawnBird(512+32, this.zeppelin.y + Phaser.Math.between(-120, 160));
 	}
 	
@@ -359,7 +377,7 @@ update ()
 			if (balloon != null) this.destroyRope(balloon);
 		}
 		if (mine.body.y >= this.waterY) {
-			explodeMine(mine);
+			this.explodeMine(mine);
 		}
 	}
 	
@@ -408,11 +426,11 @@ update ()
 }
 
 showWinScreen() {
-	winScreen = game.add.sprite(0, 16, 'win_screen');
-	winScreen.fixedToCamera = true;
+	this.winScreen = game.add.sprite(0, 16, 'win_screen');
+	this.winScreen.fixedToCamera = true;
 	
-	winScreen.alpha = 0;
-	game.add.tween(winScreen).to( { alpha: 1 }, 200, Phaser.Easing.Linear.None, true, 0, 0, false);
+	this.winScreen.alpha = 0;
+	game.add.tween(this.winScreen).to( { alpha: 1 }, 200, Phaser.Easing.Linear.None, true, 0, 0, false);
 }
 
 showLoseScreen() {
@@ -426,9 +444,6 @@ showLoseScreen() {
 showStartScreen() {
 	this.titleScreen = game.add.sprite(0, 0, 'start_screen');
 	this.titleScreen.fixedToCamera = true;
-	var tween = game.add.tween(this.titleScreen)
-	tween.to( { alpha: 0 }, 3000, Phaser.Easing.Exponential.In, true, 0, 0, false);
-	tween.onComplete.add(this.showStartScreen2, this);
 }
 
 showStartScreen2() {
@@ -517,14 +532,16 @@ updateZeppelin()
 	}
 
 	// do the tilt!
-	var rotationDistance = this.zeppelinTargetRotation - this.zeppelin.body.rotation;
-	if (Math.abs(rotationDistance) < 0.001) {
-		this.zeppelin.body.rotation = this.zeppelinTargetRotation;
-		this.zeppelin.body.angularVelocity = 0;
-	} else if (rotationDistance > 0) {
-		this.zeppelin.body.rotateRight(rotateSpeed);
-	} else if (rotationDistance < 0) {
-		this.zeppelin.body.rotateLeft(rotateSpeed);
+	if (this.start) {
+		var rotationDistance = this.zeppelinTargetRotation - this.zeppelin.body.rotation;
+		if (Math.abs(rotationDistance) < 0.001) {
+			this.zeppelin.body.rotation = this.zeppelinTargetRotation;
+			this.zeppelin.body.angularVelocity = 0;
+		} else if (rotationDistance > 0) {
+			this.zeppelin.body.rotateRight(rotateSpeed);
+		} else if (rotationDistance < 0) {
+			this.zeppelin.body.rotateLeft(rotateSpeed);
+		}
 	}
 
 	// calculate Y velocity
@@ -556,7 +573,7 @@ updateZeppelin()
 	}
 	
 	if (this.zeppelin.body.y + 60 > this.waterY && this.loseScreen == null) {
-		showLoseScreen();
+		this.showLoseScreen();
 	}
 
 
@@ -566,7 +583,9 @@ updateZeppelin()
 		}
 	}
 
-	this.zeppelin.body.moveUp(this.zeppelinTargetYV);
+	if (this.start) {
+		this.zeppelin.body.moveUp(this.zeppelinTargetYV);
+	}
 
 	this.debugText.text += "\n";
 	this.debugText.text += "meters: " + this.meters;
@@ -727,7 +746,7 @@ spawnMine(x, y){
 	mine.dropOffset = Math.random() * 64;
 	game.physics.p2.enable(mine, false);
 	mine.body.setCollisionGroup(this.mineCollisionGroup);
-	mine.body.collides([this.propellerCollisionGroup, this.zeppelinCollisionGroup, this.peopleCollisionGroup, this.mineCollisionGroup], this.mineCollides, self);
+	mine.body.collides([this.propellerCollisionGroup, this.zeppelinCollisionGroup, this.peopleCollisionGroup, this.mineCollisionGroup], this.mineCollides, this);
 	mine.body.ropeConstraint = null;
 	
 	return mine;
@@ -881,7 +900,7 @@ updateRopes()
 
 spawnExplosion(x, y)
 {
-	var explosion = explosionGroup.create(x, y, 'explosion');
+	var explosion = this.explosionGroup.create(x, y, 'explosion');
 	explosion.anchor.set(0.5, 0.5);
 	var anim = explosion.animations.add('explode');
 	anim.play(30);
