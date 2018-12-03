@@ -41,7 +41,6 @@ function preload ()
 
 function create ()
 {
-
 	game.physics.startSystem(Phaser.Physics.P2JS)
 	game.physics.p2.gravity.y = 320;
 	game.physics.p2.applyDamping = true;
@@ -51,8 +50,6 @@ function create ()
 	balloonCollisionGroup = game.physics.p2.createCollisionGroup();
 	propellerCollisionGroup = game.physics.p2.createCollisionGroup();
 	mineCollisionGroup = game.physics.p2.createCollisionGroup();
-	
-
 
 	game.world.setBounds(0, 0, 512, 864);
 	game.camera.scale.setTo(2);
@@ -395,8 +392,8 @@ function updateZeppelin()
 	} else {
 		zeroPeopleTimer += deltaT;
 		if (zeroPeopleTimer > 0.5) {
-			zeppelinTargetRotation = 1; // steep decline
-			rotateSpeed = 5;
+			zeppelinTargetRotation = 0.8; // steep decline
+			rotateSpeed = 2;
 			xVel -= 0.01;
 		}
 	}
