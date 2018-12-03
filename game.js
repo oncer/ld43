@@ -44,6 +44,7 @@ preload ()
 	game.load.audio('music', 'sfx/theme.ogg');
 	game.load.audio('wavesAudio', 'sfx/ocean_ambient.mp3');
 	game.load.audio('shredSound', 'sfx/splatter.mp3');
+	game.load.audio('explosionSplatter', 'sfx/explosionSplatter.ogg');
 	game.load.audio('popSound', 'sfx/balloon_pop.ogg');
 	game.load.audio('explosionSound', 'sfx/explosion.ogg');
 	game.load.audio('birdSound', 'sfx/bird.ogg');
@@ -188,6 +189,7 @@ create ()
 	this.shredSound = game.add.audio('shredSound');
 	this.popSound = game.add.audio('popSound');
 	this.explosionSound = game.add.audio('explosionSound');
+	this.explosionSplatterSound = game.add.audio('explosionSplatter');
 	this.birdSound = game.add.audio('birdSound');
 	this.splashSound = game.add.audio('splashSound');
 	this.peopleSound = game.add.audio('peopleSound');
@@ -414,7 +416,7 @@ update ()
 			if (balloon != null) this.destroyRope(balloon);
 		}
 		if (mine.body.y >= this.waterY) {
-			this.explodeMine(mine);
+			this.explodeMine(mine, true);
 		}
 	}
 	
@@ -558,7 +560,7 @@ updateZeppelin()
 	}
 	var rotateSpeed = 1;
 
-	if (this.peopleOnZeppelin.length > 0) {
+	if (this.peopleOnZeppelin.length > 0 && !this.loseSoundPlayed) {
 		this.zeroPeopleTimer = 0;
 	} else {
 		this.zeroPeopleTimer += this.deltaT;
@@ -819,6 +821,7 @@ mineCollides(body1, body2){
 	//TODO: damage airship
 
 	//apply impulse to all persons, based on distance to mine
+	var peopleExploded = false; // at least 1 person exploded
 	var strength = -200;
 	for (var i in this.peopleGroup.children) {
 		var person = this.peopleGroup.children[i];
@@ -831,10 +834,11 @@ mineCollides(body1, body2){
 		person.body.applyImpulse([strength * dx/distanceSq, strength * dy/distanceSq], 0, 0);
 		if (distanceSq < 40 * 40) {
 			this.personExploded(body1, person.body);
+			peopleExploded = true;
 		}
 	}
 	
-	this.explodeMine(body1.sprite);
+	this.explodeMine(body1.sprite, !peopleExploded);
 	body2.ropeConstraint = null;
 }
 
@@ -865,12 +869,12 @@ spawnBird(x, y) {
 	return bird;
 }
 
-explodeMine(mine)
+explodeMine(mine, playSound)
 {
 	mine.body.clearCollision();
 	this.spawnExplosion(mine.x, mine.y);
 	this.destroyMine(mine);
-	this.explosionSound.play();
+	if (playSound) this.explosionSound.play();
 }
 
 personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
@@ -915,7 +919,7 @@ personExploded(body1, body2){
 			this.spawnGoreParticles(body2.x, body2.y, 100, 300)
 		}
 		this.destroyPerson(body2.sprite);
-		this.shredSound.play();
+		this.explosionSplatterSound.play();
 	}
 }
 
