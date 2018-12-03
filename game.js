@@ -1,6 +1,5 @@
 var maxRotation = 0.5; // maximum rotation
 var minZeppelinY = 108;
-var zeppelinLandY = 714;
 var goreEmmiter;
 
 var meters = 0;
@@ -31,7 +30,6 @@ function preload ()
 	game.load.spritesheet('mine', 'gfx/mine.png', 32, 32);
 	game.load.image('island_start', 'gfx/island_start.png');
 	game.load.image('island_end', 'gfx/island_end.png');
-	game.load.image('rope', 'gfx/rope.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
 
@@ -58,7 +56,6 @@ function create ()
 	bgGroup.create(0, 0, 'bg');
 	bgGroup.create(512, 0, 'bg');
 
-
 	// starting island
 	island_start = game.add.sprite(0, game.world.height - 80, 'island_start');
 	// goal island
@@ -67,7 +64,7 @@ function create ()
 	propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
 	propeller.animations.add('propel').play(15, true);
 
-	zeppelin = game.add.sprite(164, zeppelinLandY, 'zeppelin');
+	zeppelin = game.add.sprite(164, game.world.height - 154, 'zeppelin');
 	game.physics.enable(zeppelin, Phaser.Physics.P2JS);
 	//zeppelin.addChild(propeller);
 	zeppelin.body.static = true;
@@ -105,7 +102,6 @@ function create ()
 	personClicked = null;
 	personClickOffset = null;
 
-	ropesGroup = game.add.group();
 	peopleGroup = game.add.group();
 	//peopleGroup.enableBody = true;
 	//peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
@@ -170,6 +166,10 @@ function update ()
 		xVel = 0
 		
 		// ~~~ Winning Condition ~~~
+
+		// TODO: neutralize tilt, lower zeppelin, disable dragging people,....
+
+		game.camera.follow(null);
 		if (zeppelin.body.x < game.world.width - 128) {
 			zeppelin.body.x += 1;
 			for(var i in peopleGroup.children) {
@@ -182,7 +182,8 @@ function update ()
 	
 	setDistanceBar(meters/maxDistance);
 
-	if (meters < maxDistance && timer % 360 == 0) {
+	// TODO: not spawn if winning condition is met.
+	if (timer % 360 == 0) {
 		var v = Phaser.Math.between(0, 11);
 		if (Math.floor(Math.random() * 2)) {
 			spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
@@ -192,7 +193,7 @@ function update ()
 	}
 	
 	// mouse/touch logic
-	if (game.input.activePointer.isDown && meters < maxDistance) {
+	if (game.input.activePointer.isDown) {
 		mouseBody.position[0] = game.physics.p2.pxmi(mouseX);
 		mouseBody.position[1] = game.physics.p2.pxmi(mouseY);
 		var clickPos = new Phaser.Point(game.physics.p2.pxmi(mouseX), game.physics.p2.pxmi(mouseY));
@@ -218,38 +219,27 @@ function update ()
 					mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
 
 					//console.log(personClicked.parent.rope);
-					if (personClicked.parent.ropeConstraint != null){
-						personClicked.parent.ropeConstraint.bodyA.parent.ropeConstraint = null;
-						game.physics.p2.removeConstraint(personClicked.parent.ropeConstraint);
-
-						personClicked.parent.ropeConstraint = null;
+					if (personClicked.parent.rope != null){
+						game.physics.p2.removeConstraint(personClicked.parent.rope);
+						delete personClicked.parent.rope;
 					}
 				}
 			}
 			balloonClicked = game.physics.p2.hitTest(new Phaser.Point(mouseX, mouseY), balloonGroup.children);
 			if (balloonClicked.length > 0){
-				for (var i in balloonClicked) {
-					balloon = balloonClicked[i];
-					if (!balloon.parent.sprite.popped) {
-						balloon.parent.ropeConstraint.bodyB.parent.ropeConstraint = null;
-						game.physics.p2.removeConstraint(balloon.parent.ropeConstraint);
-						balloon.parent.ropeConstraint = null;
-						pop(balloon.parent.sprite);
-						break;
-					}
-				}
+				balloon = balloonClicked[0];
+				game.physics.p2.removeConstraint(balloon.parent.rope);
+				delete balloon.parent.rope;
+				pop(balloon.parent.sprite);
 			}
 
 		} else {
+
 			// moves to the top z-layer
 			personClicked.parent.sprite.moveUp();
-			// disables collision with other people
-			for (var i in personClicked.parent.collidesWith) {
-				if (personClicked.parent.collidesWith[i] === peopleCollisionGroup || personClicked.parent.collidesWith[i] === zeppelinCollisionGroup) {
-					personClicked.parent.collidesWith.splice(i, 1);
-				}
-			}
-			personClicked.parent.updateCollisionMask();
+			// disables collision
+			personClicked.parent.data.shapes[0].sensor = true;
+
 			
 			if (personClicked.parent.sprite.inWater) {
 				game.physics.p2.removeConstraint(mouseConstraint);
@@ -261,22 +251,25 @@ function update ()
 		if (personClicked != null) {
 			game.physics.p2.removeConstraint(mouseConstraint);
 			// enables collision again
-			personClicked.parent.collides(peopleCollisionGroup);
-			personClicked.parent.collides(zeppelinCollisionGroup);
+			personClicked.parent.data.shapes[0].sensor = false;
 		}
 		personClicked = null;
 		clickPos = null;
 	}
 
+	// update people
+	for (var i in peopleGroup.children) {
+		var person = peopleGroup.children[i];
+		// ...
+	}
+
 	// update balloons
 	for (var b in balloonGroup.children) {
 		var balloon = balloonGroup.children[b];
+		balloon.body.angle = 0;
 		if (balloon.popped) {
 			if ((T - balloon.popTime)*30 > balloon.frame){
-				if (balloon.frame == 3){
-					if (balloon.rope != null) {
-						balloon.rope.destroy();
-					}
+				if (balloon.frame == 4){
 					balloon.destroy();
 				} else {
 					balloon.frame += 1;
@@ -304,7 +297,6 @@ function update ()
 
 	updateZeppelin();
 	updateWaterCurrent();
-	updateRopes();
 
 	debugText.y = 240 + game.camera.view.y / game.camera.scale.y; 
 	//zeppelin.body.rotateRight(1);
@@ -374,12 +366,10 @@ function updateZeppelin()
 		peopleMass++;
 	}
 	var rotationScale = Math.min(1, Math.abs(zeppelinSumWeight / 30));
-	if (meters < maxDistance) {
-		zeppelinTargetRotation = maxRotation * rotationScale * Math.sign(zeppelinSumWeight);
-	} else {
-		// won!
-		zeppelinTargetRotation = 0;
-	}
+	zeppelinTargetRotation = maxRotation * rotationScale * Math.sign(zeppelinSumWeight);
+	debugText.text += "\n";
+	debugText.text += "meters: " + meters;
+
 	// do the tilt!
 	var rotationDistance = zeppelinTargetRotation - zeppelin.body.rotation;
 	if (rotationDistance > 0) {
@@ -393,17 +383,9 @@ function updateZeppelin()
 	c1 = -100;
 	c2 = 0;
 	c3 = 0;
-	if (meters < maxDistance) {
-		zeppelinTargetYV = c1 * zeppelin.body.rotation +
-			c2 * (zeppelinWeightCapacity - peopleMass) +
-			c3 * Math.sin(T);
-	} else {
-		// won!
-		zeppelinTargetYV = -50;
-		if (zeppelin.body.y >= zeppelinLandY) {
-			zeppelinTargetYV = 0;
-		}
-	}
+	zeppelinTargetYV = c1 * zeppelin.body.rotation +
+		c2 * (zeppelinWeightCapacity - peopleMass) +
+		c3 * Math.sin(T);
 
 	if (zeppelin.body.y <= minZeppelinY) {
 		zeppelinTargetYV = 0;
@@ -411,14 +393,11 @@ function updateZeppelin()
 
 	zeppelin.body.moveUp(zeppelinTargetYV);
 
-	debugText.text += "\n";
-	debugText.text += "meters: " + meters;
-
 	debugText.text = "balance: " + zeppelinSumWeight.toFixed(2) + ", rotation: " + zeppelinTargetRotation.toFixed(2);
 	debugText.text += "\n";
 	debugText.text += "people on board: " + peopleOnZeppelin.length + ", people mass: " + peopleMass;
 	debugText.text += "\n";
-	debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2) + ", current y: " + zeppelin.body.y;
+	debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2);
 }
 
 function updateWaterCurrent()
@@ -461,7 +440,7 @@ function spawnPerson(i, x, y)
 	person.weight = weights[i];
 	person.body.onBeginContact.add(personZeppelinBeginContact, this);
 	person.body.onEndContact.add(personZeppelinEndContact, this);
-	person.body.ropeConstraint = null;
+	person.body.rope = null;
 
 	return person;
 }
@@ -478,10 +457,9 @@ function destroyPerson(person)
 			}
 		}
 	}
-	if (person.body.ropeConstraint != null) {
-		person.body.ropeConstraint.bodyA.parent.ropeConstraint = null;
-		game.physics.p2.removeConstraint(person.body.ropeConstraint);
-		person.body.ropeConstraint = null;
+	if (person.body.rope != null) {
+		game.physics.p2.removeConstraint(person.body.rope);
+		person.body.rope = null;
 	}
 	if (personClicked != null && personClicked.parent.sprite === person) {
 		game.physics.p2.removeConstraint(mouseConstraint);
@@ -494,20 +472,13 @@ function destroyPerson(person)
 function balloonShredded(body1, body2)
 {
 	if (body2 != null && body2.sprite != null && body2.sprite.popped == false) {
-		game.physics.p2.removeConstraint(body2.ropeConstraint);
-		body1.ropeConstraint = null;
-		body2.ropeConstraint = null;
+		game.physics.p2.removeConstraint(body2.rope);
+		delete body2.rope;
 		pop(body2.sprite);
 	}
 }
 
 function spawnBalloon(x, y){
-	var ropeGroup = game.add.group();
-	ropesGroup.add(ropeGroup);
-	ropeGroup.createMultiple(16, 'rope');
-	for (var i in ropeGroup.children) {
-		ropeGroup.children[i].anchor.set(0.5, 0.5);
-	}
 	var balloon = balloonGroup.create(x, y, 'balloon');
 	balloon.frame = 0;
 	game.physics.p2.enable(balloon, false);
@@ -519,9 +490,8 @@ function spawnBalloon(x, y){
 	//balloon.body.collides(peopleCollisionGroup);
 	balloon.damping = 0.999;
 	balloon.angularDamping = 0.995;
-	balloon.body.ropeConstraint = null;
+	balloon.body.rope = null;
 	balloon.popped = false;
-	balloon.rope = ropeGroup;
 
 	return balloon;
 }
@@ -534,10 +504,10 @@ function pop(balloon){
 function spawnPersonOnBalloon(i, x, y){
 	person = spawnPerson(i, x, y);
 	balloon = spawnBalloon(x + 2, y - 32);
-	ropeConstraint = this.game.physics.p2.createDistanceConstraint(balloon.body, person.body, 20, [0,15], [0,-1])
+	rope = this.game.physics.p2.createDistanceConstraint(balloon.body, person.body, 20, [0,15], [0,-1])
 
-	person.body.ropeConstraint = ropeConstraint;
-	balloon.body.ropeConstraint = ropeConstraint;
+	person.body.rope = rope;
+	balloon.body.rope = rope;
 }
 
 function spawnMine(x, y){
@@ -546,7 +516,7 @@ function spawnMine(x, y){
 	game.physics.p2.enable(mine, false);
 	mine.body.setCollisionGroup(mineCollisionGroup);
 	mine.body.collides([propellerCollisionGroup, zeppelinCollisionGroup, peopleCollisionGroup, mineCollisionGroup], mineCollides, self);
-	mine.body.ropeConstraint = null;
+	mine.body.rope = null;
 	
 	return mine;
 }
@@ -554,10 +524,10 @@ function spawnMine(x, y){
 function spawnMineOnBalloon(x, y){
 	mine = spawnMine(x, y);
 	balloon = spawnBalloon(x + 2, y - 32);
-	ropeConstraint = this.game.physics.p2.createDistanceConstraint(balloon.body, mine.body, 20, [0,15], [0,-1])
+	rope = this.game.physics.p2.createDistanceConstraint(balloon.body, mine.body, 20, [0,15], [0,-1])
 
-	mine.body.ropeConstraint = ropeConstraint;
-	balloon.body.ropeConstraint = ropeConstraint;
+	mine.body.rope = rope;
+	balloon.body.rope = rope;
 }
 
 function mineCollides(body1, body2){
@@ -570,20 +540,19 @@ function mineCollides(body1, body2){
 		dx = person.x - body1.x;
 		dy = person.y - body1.y;
 		distanceSq = dx * dx + dy * dy
-		//console.log(distanceSq);
-		//console.log(dx/distanceSq);
-		//console.log(dy/distanceSq);
+		console.log(distanceSq);
+		console.log(dx/distanceSq);
+		console.log(dy/distanceSq);
 		person.body.applyImpulse([strength * dx/distanceSq, strength * dy/distanceSq], 0, 0);
 	}
 	
 	
 	//remove mine
 	body1.clearCollision();
-	if (body1.ropeConstraint != null){
-		pop(body1.ropeConstraint.bodyA.parent.sprite);
-		game.physics.p2.removeConstraint(body1.ropeConstraint);
-		body1.ropeConstraint = null;
-		body2.ropeConstraint = null;
+	if (body1.rope != null){
+		pop(body1.rope.bodyA.parent.sprite);
+		game.physics.p2.removeConstraint(body1.rope);
+		body1.rope = null;
 	}
 }
 
@@ -628,32 +597,6 @@ function personShredded(body1, body2){
 		
 		goreEmitter.start(true, 2000, null, 20);
 		destroyPerson(body2.sprite);
-	}
-}
-
-function updateRopes()
-{
-	for (var i in balloonGroup.children) {
-		var balloon = balloonGroup.children[i];
-		if (balloon.rope != null) {
-			if (balloon.body.ropeConstraint == null) {
-				// rope is not needed anymore
-				balloon.rope.destroy();
-				balloon.rope = null;
-			} else {
-				// adjust rope segments
-				var object = balloon.body.ropeConstraint.bodyB.parent.sprite;
-				var dx = object.x - balloon.x;
-				var dy = object.y - balloon.y;
-				var count = balloon.rope.children.length;
-				for (var j in balloon.rope.children) {
-					var segment = balloon.rope.children[j];
-					segment.x = balloon.x + dx / count * j;
-					segment.y = balloon.y + dy / count * j;
-					segment.exists = true;
-				}
-			}
-		}
 	}
 }
 
