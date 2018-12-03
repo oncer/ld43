@@ -43,7 +43,7 @@ preload ()
 	game.load.image('start_screen', 'gfx/startscreen.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 	game.load.audio('music', 'sfx/theme.ogg');
-	game.load.audio('wavesAudio', 'sfx/ocean_ambient.ogg');
+	game.load.audio('wavesAudio', 'sfx/ocean_ambient.mp3');
 	game.load.audio('shredSound', 'sfx/splatter.mp3');
 	game.load.audio('popSound', 'sfx/balloon_pop.ogg');
 	game.load.audio('explosionSound', 'sfx/explosion.ogg');
@@ -191,7 +191,9 @@ create ()
 	this.birdSound = game.add.audio('birdSound');
 	this.splashSound = game.add.audio('splashSound');
 	this.peopleSound = game.add.audio('peopleSound');
-
+	
+	this.loseSoundPlayed = false;
+	
 	//start screen
 	this.showStartScreen();
 	//play ocean waves audio
@@ -594,6 +596,10 @@ updateZeppelin()
 	if (this.zeroPeopleTimer > this.zeroPeopleTimeout
 		 && this.zeppelin.body.y + 80 > this.waterY) {
 		this.zeppelinTargetYV = Math.max(-8, Math.min(0.0, this.zeppelinTargetYV));
+		if (this.loseSoundPlayed == false) {
+			this.splashSound.play()
+			this.loseSoundPlayed = true
+		}
 	}
 	
 	if (this.zeppelin.body.y + 60 > this.waterY && this.loseScreen == null) {
@@ -627,7 +633,11 @@ updateWaterCurrent()
 	{
 		var person = this.peopleGroup.children[i];
 		if (person.body.y > this.waterY) {
+			if (person.inWater != true && person.waterTimer > 0.5) {
+				this.splashSound.play();
+			}
 			person.inWater = true;
+			person.waterTimer = 0;
 			person.body.moveLeft(100);
 			if (person.body.y > game.world.bounds.height - 48) {
 				// prevent person from disappearing
@@ -635,6 +645,7 @@ updateWaterCurrent()
 			}
 		} else {
 			person.inWater = false;
+			person.waterTimer += this.deltaT;
 		}
 	}
 
@@ -663,6 +674,7 @@ spawnPerson(i, x, y)
 	person.body.onBeginContact.add(this.personZeppelinBeginContact, this);
 	person.body.onEndContact.add(this.personZeppelinEndContact, this);
 	person.body.ropeConstraint = null;
+	person.waterTimer = 0;
 
 	return person;
 }
