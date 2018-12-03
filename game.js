@@ -908,6 +908,7 @@ personExploded(body1, body2){
 			this.spawnGoreParticles(body2.x, body2.y, 100, 300)
 		}
 		this.destroyPerson(body2.sprite);
+		this.shredSound.play();
 	}
 }
 
