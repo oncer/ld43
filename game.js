@@ -27,6 +27,7 @@ function preload ()
 	game.load.spritesheet('hudDistance', 'gfx/hud_distance_bar.png', 128, 16);
 	game.load.spritesheet('hudDistanceCursor', 'gfx/hud_distance_cursor.png', 16, 16);
 	game.load.spritesheet('gore', 'gfx/gore.png', 16, 16);
+	game.load.spritesheet('mine', 'gfx/mine.png', 32, 32);
 	game.load.image('island_start', 'gfx/island_start.png');
 	game.load.image('island_end', 'gfx/island_end.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
@@ -43,6 +44,8 @@ function create ()
 	peopleCollisionGroup = game.physics.p2.createCollisionGroup();
 	balloonCollisionGroup = game.physics.p2.createCollisionGroup();
 	propellerCollisionGroup = game.physics.p2.createCollisionGroup();
+	mineCollisionGroup = game.physics.p2.createCollisionGroup();
+	
 
 
 	game.world.setBounds(0, 0, 512, 864);
@@ -69,13 +72,14 @@ function create ()
 	zeppelin.body.clearShapes();
 	zeppelin.body.addRectangle(224, 16, 0, 64 + 32);
 	zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
-	zeppelin.body.collides(peopleCollisionGroup);
+	zeppelin.body.collides([peopleCollisionGroup, mineCollisionGroup]);
 	game.physics.enable(propeller, Phaser.Physics.P2JS);
 	propeller.body.clearShapes();
 	propeller.body.addRectangle(5, 60, -4, 0);
 	propeller.body.setCollisionGroup(propellerCollisionGroup);
 	propeller.body.collides(peopleCollisionGroup, personShredded, this);
 	propeller.body.collides(balloonCollisionGroup, balloonShredded, this);
+	propeller.body.collides(mineCollisionGroup);
 	game.physics.p2.createLockConstraint(zeppelin.body, propeller.body, [144-26, 80-154]);
 
 	zeppelinTargetRotation = 0; // slowly rotate to this value
@@ -102,7 +106,7 @@ function create ()
 	//peopleGroup.enableBody = true;
 	//peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
 	for (var i = 0; i < 4; i++) {
-		spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, 64 + i*32, zeppelin.y);
+		person = spawnPerson(i, 64 + i*32, zeppelin.y);
 	}
 
 	balloonGroup = game.add.group();
@@ -138,6 +142,9 @@ function create ()
 	goreEmitter.gravity = 200;
 	goreEmitter.maxParticles = 500;
 	goreEmitter.setXSpeed(-300,-100);
+	
+	mineGroup = game.add.group();
+	
 
 
 }
@@ -178,7 +185,11 @@ function update ()
 	// TODO: not spawn if winning condition is met.
 	if (timer % 360 == 0) {
 		var v = Phaser.Math.between(0, 11);
-		spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
+		if (Math.floor(Math.random() * 2)) {
+			spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
+		} else {
+			spawnMineOnBalloon(512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
+		}
 	}
 	
 	// mouse/touch logic
@@ -199,7 +210,7 @@ function update ()
 				if (personClicked != null) {
 					//personClicked = peopleClicked[0];
 					//personClickOffset = Phaser.Point.subtract(clickPos, new Phaser.Point(personClicked.x, personClicked.y));
-					console.log(personClicked);
+					//console.log(personClicked);
 
 					var localPointInBody = [0, 0];
 					// this function takes physicsPos and coverts it to the body's local coordinate system
@@ -207,7 +218,7 @@ function update ()
 					// use a revoluteContraint to attach mouseBody to the clicked body
 					mouseConstraint = this.game.physics.p2.createRevoluteConstraint(mouseBody, [0, 0], personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
 
-					console.log(personClicked.parent.rope);
+					//console.log(personClicked.parent.rope);
 					if (personClicked.parent.rope != null){
 						game.physics.p2.removeConstraint(personClicked.parent.rope);
 						delete personClicked.parent.rope;
@@ -219,8 +230,7 @@ function update ()
 				balloon = balloonClicked[0];
 				game.physics.p2.removeConstraint(balloon.parent.rope);
 				delete balloon.parent.rope;
-				balloon.parent.sprite.popped = true;
-				balloon.parent.sprite.popTime = T;
+				pop(balloon.parent.sprite);
 			}
 
 		} else {
@@ -408,7 +418,7 @@ function updateWaterCurrent()
 
 }
 
-function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y)
+function spawnPerson(i, x, y)
 {
 	var weights = [ 13, 13, 13, 13, 21, 21, 21, 21, 34, 34, 34, 34 ];
 	var person = peopleGroup.create(x, y, 'people');
@@ -423,6 +433,7 @@ function spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, 
 	person.body.collides(zeppelinCollisionGroup);
 	person.body.collides(peopleCollisionGroup);
 	person.body.collides(propellerCollisionGroup);
+	person.body.collides(mineCollisionGroup);
 	person.body.damping = 0;
 	person.body.angularDamping = 0.995;
 	person.weight = weights[i];
@@ -462,12 +473,11 @@ function balloonShredded(body1, body2)
 	if (body2 != null && body2.sprite != null && body2.sprite.popped == false) {
 		game.physics.p2.removeConstraint(body2.rope);
 		delete body2.rope;
-		body2.sprite.popped = true;
-		body2.sprite.popTime = T;
+		pop(body2.sprite);
 	}
 }
 
-function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
+function spawnBalloon(x, y){
 	var balloon = balloonGroup.create(x, y, 'balloon');
 	balloon.frame = 0;
 	game.physics.p2.enable(balloon, false);
@@ -485,13 +495,64 @@ function spawnBalloon(balloonGroup, balloonCollisionGroup, x, y){
 	return balloon;
 }
 
+function pop(balloon){
+	balloon.popped = true;
+	balloon.popTime = T;
+}
+
 function spawnPersonOnBalloon(i, x, y){
-	person = spawnPerson(peopleGroup, peopleCollisionGroup, zeppelinCollisionGroup, i, x, y);
-	balloon = spawnBalloon(balloonGroup, balloonCollisionGroup, x + 2, y - 32);
+	person = spawnPerson(i, x, y);
+	balloon = spawnBalloon(x + 2, y - 32);
 	rope = this.game.physics.p2.createDistanceConstraint(balloon.body, person.body, 20, [0,15], [0,-1])
 
 	person.body.rope = rope;
 	balloon.body.rope = rope;
+}
+
+function spawnMine(x, y){
+	var mine = mineGroup.create(x, y, 'mine');
+	mine.frame = 0;
+	game.physics.p2.enable(mine, false);
+	mine.body.setCollisionGroup(mineCollisionGroup);
+	mine.body.collides([propellerCollisionGroup, zeppelinCollisionGroup, peopleCollisionGroup, mineCollisionGroup], mineCollides, self);
+	mine.body.rope = null;
+	
+	return mine;
+}
+	
+function spawnMineOnBalloon(x, y){
+	mine = spawnMine(x, y);
+	balloon = spawnBalloon(x + 2, y - 32);
+	rope = this.game.physics.p2.createDistanceConstraint(balloon.body, mine.body, 20, [0,15], [0,-1])
+
+	mine.body.rope = rope;
+	balloon.body.rope = rope;
+}
+
+function mineCollides(body1, body2){
+	//trigger explode animation
+	//damage airship
+	//apply impulse to all persons, based on distance to mine
+	strength = -200
+	for (var i in peopleGroup.children) {
+		var person = peopleGroup.children[i];
+		dx = person.x - body1.x;
+		dy = person.y - body1.y;
+		distanceSq = dx * dx + dy * dy
+		console.log(distanceSq);
+		console.log(dx/distanceSq);
+		console.log(dy/distanceSq);
+		person.body.applyImpulse([strength * dx/distanceSq, strength * dy/distanceSq], 0, 0);
+	}
+	
+	
+	//remove mine
+	body1.clearCollision();
+	if (body1.rope != null){
+		pop(body1.rope.bodyA.parent.sprite);
+		game.physics.p2.removeConstraint(body1.rope);
+		body1.rope = null;
+	}
 }
 
 function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
@@ -523,7 +584,6 @@ function personZeppelinEndContact(body, bodyB, shapeA, shapeB, equation)
 }
 
 function setDistanceBar(value){
-	//game.add.tween(logo2.cameraOffset).to( { y: 400 }, 2000, Phaser.Easing.Back.InOut, true, 0, 2000, true);
 	distanceBarCursor.cameraOffset.x = 376 + value * 242
 }
 
