@@ -51,6 +51,7 @@ preload ()
 	game.load.audio('splashSound', 'sfx/splash.ogg');
 	game.load.audio('peopleSound', 'sfx/person.ogg');
 	game.load.audio('warningSound', 'sfx/warning.ogg');
+	game.load.audio('throwSound', 'sfx/throw.ogg');
 }
 
 create ()
@@ -193,6 +194,7 @@ create ()
 	this.birdSound = game.add.audio('birdSound');
 	this.splashSound = game.add.audio('splashSound');
 	this.peopleSound = game.add.audio('peopleSound');
+	this.throwSound = game.add.audio('throwSound');
 	this.warningSound = game.add.audio('warningSound');
 	this.warningSoundArmed = true; // can/should it be played
 	
@@ -373,6 +375,11 @@ update ()
 			// enables collision again
 			this.personClicked.parent.collides(this.peopleCollisionGroup);
 			this.personClicked.parent.collides(this.zeppelinCollisionGroup);
+			
+			var vel = this.personClicked.parent.velocity.destination;
+			var speed = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]);
+			
+			if (speed > 15) {this.throwSound.play()}
 		}
 		this.personClicked = null;
 	}
