@@ -1,7 +1,7 @@
 var maxRotation = 0.5; // maximum rotation
 var minZeppelinY = 108;
 var zeppelinLandY = 714;
-var goreEmmiter;
+var goreEmitter;
 
 var meters = 0;
 var maxDistance = 3000; // this is the distance to the final destination
