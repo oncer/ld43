@@ -922,12 +922,12 @@ updateRopes()
 				// adjust rope segments
 				var object = balloon.body.ropeConstraint.bodyB.parent.sprite;
 				var dx = object.x - balloon.x;
-				var dy = object.y - balloon.y;
+				var dy = object.y - balloon.y - 15;
 				var count = balloon.rope.children.length;
 				for (var j in balloon.rope.children) {
 					var segment = balloon.rope.children[j];
 					segment.x = balloon.x + dx / count * j;
-					segment.y = balloon.y + dy / count * j;
+					segment.y = balloon.y + 15 + dy / count * j;
 					segment.exists = true;
 				}
 			}
