@@ -170,7 +170,7 @@ function create ()
 	
 	// NPE
 	balloon = spawnPersonOnBalloon(8, 400, 680);
-	game.time.events.add(4000, function() {pop(balloon)}, self);
+	game.time.events.add(4000, function() {if (balloon != null && balloon.body != null) pop(balloon)}, self);
 }
 
 function update ()
@@ -451,10 +451,9 @@ function updateZeppelin()
 		zeroPeopleTimer = 0;
 	} else {
 		zeroPeopleTimer += deltaT;
-		if (zeroPeopleTimer > 0.5) {
+		if (zeroPeopleTimer > zeroPeopleTimeout) {
 			zeppelinTargetRotation = 0.8; // steep decline
 			rotateSpeed = 2;
-			xVel -= 0.01;
 		}
 	}
 
@@ -486,6 +485,12 @@ function updateZeppelin()
 
 	if (zeppelin.body.y <= minZeppelinY) {
 		zeppelinTargetYV = Math.min(0, zeppelinTargetYV);
+	}
+
+
+	if (zeroPeopleTimer > zeroPeopleTimeout
+		 && zeppelin.body.y + 80 > waterY) {
+		zeppelinTargetYV = Math.max(-8, Math.min(0.0, zeppelinTargetYV));
 	}
 
 	zeppelin.body.moveUp(zeppelinTargetYV);
