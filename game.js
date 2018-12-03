@@ -48,7 +48,8 @@ preload ()
 	game.load.audio('popSound', 'sfx/balloon_pop.ogg');
 	game.load.audio('explosionSound', 'sfx/explosion.ogg');
 	game.load.audio('birdSound', 'sfx/bird.ogg');
-	
+	game.load.audio('splashSound', 'sfx/placeholder.ogg');
+	game.load.audio('peopleSound', 'sfx/placeholder.ogg');
 }
 
 create ()
@@ -188,6 +189,8 @@ create ()
 	this.popSound = game.add.audio('popSound');
 	this.explosionSound = game.add.audio('explosionSound');
 	this.birdSound = game.add.audio('birdSound');
+	this.splashSound = game.add.audio('splashSound');
+	this.peopleSound = game.add.audio('peopleSound');
 
 	//start screen
 	this.showStartScreen();
@@ -314,7 +317,8 @@ update ()
 					this.personClicked.toLocalFrame(localPointInBody, this.mouseBody.position);
 					// use a revoluteContraint to attach mouseBody to the clicked body
 					this.mouseConstraint = this.game.physics.p2.createRevoluteConstraint(this.mouseBody, [0, 0], this.personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
-
+					this.peopleSound.play();
+					
 					//console.log(personClicked.parent.rope);
 					if (this.personClicked.parent.ropeConstraint != null){
 						this.personClicked.parent.ropeConstraint.bodyA.parent.ropeConstraint = null;
