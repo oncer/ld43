@@ -720,9 +720,9 @@ spawnMine(x, y){
 }
 	
 spawnMineOnBalloon(x, y, steel){
-	mine = this.spawnMine(x, y);
-	balloon = spawnBalloon(x + 2, y - 32, steel);
-	ropeConstraint = this.game.physics.p2.createDistanceConstraint(balloon.body, mine.body, 20, [0,15], [0,-1])
+	var mine = this.spawnMine(x, y);
+	var balloon = this.spawnBalloon(x + 2, y - 32, steel);
+	var ropeConstraint = this.game.physics.p2.createDistanceConstraint(balloon.body, mine.body, 20, [0,15], [0,-1])
 
 	mine.body.ropeConstraint = ropeConstraint;
 	balloon.body.ropeConstraint = ropeConstraint;
@@ -732,22 +732,22 @@ mineCollides(body1, body2){
 	//TODO: damage airship
 
 	//apply impulse to all persons, based on distance to mine
-	strength = -200
+	var strength = -200;
 	for (var i in this.peopleGroup.children) {
 		var person = this.peopleGroup.children[i];
-		dx = person.x - body1.x;
-		dy = person.y - body1.y;
-		distanceSq = dx * dx + dy * dy
+		var dx = person.x - body1.x;
+		var dy = person.y - body1.y;
+		var distanceSq = dx * dx + dy * dy
 		//console.log(distanceSq);
 		//console.log(dx/distanceSq);
 		//console.log(dy/distanceSq);
 		person.body.applyImpulse([strength * dx/distanceSq, strength * dy/distanceSq], 0, 0);
 		if (distanceSq < 40 * 40) {
-			personExploded(body1, person.body);
+			this.personExploded(body1, person.body);
 		}
 	}
 	
-	explodeMine(body1.sprite);
+	this.explodeMine(body1.sprite);
 	body2.ropeConstraint = null;
 }
 
@@ -768,7 +768,7 @@ spawnBird(x, y) {
 	game.physics.p2.enable(bird, false);
 	bird.body.clearShapes();
 	bird.body.addRectangle(22, 8, 0, 0);
-	bird.body.setCollisionGroup(birdCollisionGroup);
+	bird.body.setCollisionGroup(this.birdCollisionGroup);
 	bird.body.collides([this.propellerCollisionGroup, this.zeppelinCollisionGroup, this.peopleCollisionGroup]);
 	
 	bird.body.fixedRotation = true;
@@ -781,8 +781,8 @@ spawnBird(x, y) {
 explodeMine(mine)
 {
 	mine.body.clearCollision();
-	spawnExplosion(mine.x, mine.y);
-	destroyMine(mine);
+	this.spawnExplosion(mine.x, mine.y);
+	this.destroyMine(mine);
 }
 
 personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
