@@ -48,8 +48,8 @@ preload ()
 	game.load.audio('popSound', 'sfx/balloon_pop.ogg');
 	game.load.audio('explosionSound', 'sfx/explosion.ogg');
 	game.load.audio('birdSound', 'sfx/bird.ogg');
-	game.load.audio('splashSound', 'sfx/placeholder.ogg');
-	game.load.audio('peopleSound', 'sfx/placeholder.ogg');
+	game.load.audio('splashSound', 'sfx/splash.ogg');
+	game.load.audio('peopleSound', 'sfx/person.ogg');
 }
 
 create ()
