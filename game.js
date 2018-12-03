@@ -169,7 +169,7 @@ function update ()
 	var mouseY = (game.input.activePointer.position.y + game.camera.view.y) / game.camera.scale.y;
 
 	if (zeroPeopleTimer >= zeroPeopleTimeout) {
-		xVel = Math.max(xVel - .002, 1);
+		xVel = Math.max(xVel - .002, 0);
 	} else if (meters < maxDistance) {
 		xVel = Math.min(xVel + .002, 1);
 	} else {
