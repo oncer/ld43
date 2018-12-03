@@ -33,6 +33,7 @@ function preload ()
 	game.load.spritesheet('gore', 'gfx/gore.png', 16, 16);
 	game.load.spritesheet('mine', 'gfx/mine.png', 31, 31);
 	game.load.spritesheet('explosion', 'gfx/explosion.png', 64, 64);
+	game.load.spritesheet('bird', 'gfx/bird.png', 32, 32);
 	game.load.image('rope', 'gfx/rope.png');
 	game.load.image('island_start', 'gfx/island_start.png');
 	game.load.image('island_end', 'gfx/island_end.png');
@@ -51,6 +52,7 @@ function create ()
 	balloonCollisionGroup = game.physics.p2.createCollisionGroup();
 	propellerCollisionGroup = game.physics.p2.createCollisionGroup();
 	mineCollisionGroup = game.physics.p2.createCollisionGroup();
+	birdCollisionGroup = game.physics.p2.createCollisionGroup();
 	
 
 
@@ -79,13 +81,14 @@ function create ()
 	zeppelin.body.clearShapes();
 	zeppelin.body.addRectangle(224, 16, 0, 64 + 32);
 	zeppelin.body.setCollisionGroup(zeppelinCollisionGroup);
-	zeppelin.body.collides([peopleCollisionGroup, mineCollisionGroup]);
+	zeppelin.body.collides([peopleCollisionGroup, mineCollisionGroup, birdCollisionGroup]);
 	game.physics.enable(propeller, Phaser.Physics.P2JS);
 	propeller.body.clearShapes();
 	propeller.body.addRectangle(5, 60, -4, 0);
 	propeller.body.setCollisionGroup(propellerCollisionGroup);
 	propeller.body.collides(peopleCollisionGroup, personShredded, this);
 	propeller.body.collides(balloonCollisionGroup, balloonShredded, this);
+	propeller.body.collides(birdCollisionGroup, personShredded, this);
 	propeller.body.collides(mineCollisionGroup);
 	game.physics.p2.createLockConstraint(zeppelin.body, propeller.body, [144-26, 80-154]);
 
@@ -124,6 +127,8 @@ function create ()
 	game.physics.p2.world.addBody(mouseBody);
 
 	mineGroup = game.add.group();
+	
+	birdGroup = game.add.group();
 
 	// ocean waves
 	oceanGroup = game.add.group();
@@ -195,6 +200,10 @@ function update ()
 		} else {
 			spawnMineOnBalloon(512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
 		}
+	}
+	
+	if (meters < maxDistance && timer % 300 == 0) {
+		spawnBird(512-32, zeppelin.y + Phaser.Math.between(-64, 64));
 	}
 	
 	// mouse/touch logic
@@ -297,6 +306,19 @@ function update ()
 			explodeMine(mine);
 		}
 	}
+	
+	// update birds
+	for (var i in birdGroup.children) {
+		var bird = birdGroup.children[i];
+		bird.body.applyForce([0,game.physics.p2.gravity.y/40], 0, 0);
+		if (bird.body.velocity.y > 50) {
+			bird.body.applyImpulse([0,5], 0, 0);
+		}
+		if (bird.body.velocity.x > -80) {
+			bird.body.applyImpulse([1,0], 0, 0);
+		}
+	}
+	
 
 	// ~~~ scrolling ~~~
 	oceanGroup.x = (oceanGroup.x - xVel) % game.world.width;
@@ -478,6 +500,7 @@ function spawnPerson(i, x, y)
 	person.body.collides(peopleCollisionGroup);
 	person.body.collides(propellerCollisionGroup);
 	person.body.collides(mineCollisionGroup);
+	person.body.collides(birdCollisionGroup);
 	person.body.damping = 0;
 	person.body.angularDamping = 0.995;
 	person.weight = weights[i];
@@ -549,17 +572,19 @@ function spawnBalloon(x, y){
 }
 
 function pop(balloon){
-	if (balloon.body.ropeConstraint != null) {
-		balloon.body.ropeConstraint.bodyB.parent.ropeConstraint = null;
-		game.physics.p2.removeConstraint(balloon.body.ropeConstraint);
+	if (balloon != null) {
+		if (balloon.body.ropeConstraint != null) {
+			balloon.body.ropeConstraint.bodyB.parent.ropeConstraint = null;
+			game.physics.p2.removeConstraint(balloon.body.ropeConstraint);
 
-		balloon.body.ropeConstraint = null;
+			balloon.body.ropeConstraint = null;
+		}
+		if (balloon.rope != null) {
+			balloon.rope.destroy();
+		}
+		balloon.popped = true;
+		balloon.popTime = T;
 	}
-	if (balloon.rope != null) {
-		balloon.rope.destroy();
-	}
-	balloon.popped = true;
-	balloon.popTime = T;
 }
 
 function spawnPersonOnBalloon(i, x, y){
@@ -622,6 +647,22 @@ function explodeMine(mine)
 	}
 	spawnExplosion(mine.x, mine.y);
 	mine.destroy();
+}
+
+function spawnBird(x, y) {
+	var bird = birdGroup.create(x, y, 'bird');
+	bird.frame = 0;
+	game.physics.p2.enable(bird, false);
+	bird.body.clearShapes();
+	bird.body.addRectangle(22, 8, 0, 0);
+	bird.body.setCollisionGroup(birdCollisionGroup);
+	bird.body.collides([propellerCollisionGroup, zeppelinCollisionGroup, peopleCollisionGroup]);
+	
+	bird.body.fixedRotation = true;
+	
+	bird.body.applyImpulse([6, 0], 0, 0);
+	
+	return bird;
 }
 
 function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
