@@ -1,12 +1,10 @@
 //TODO: explosionen wenn zeppelin untergeht
 //TODO: win screen
 //TODO: lose screen
-//TODO: anfangsbedingungen
 //TODO: nur personen spawnen die noch nicht an bord sind
-//TODO: minen über zeppelin droppen
-//XXX: vögel
 //XXX: mehrere ballons pro person
 
+var winScreen = null;
 var initialZeppelinWeightCapacity = 150; // could become less over time
 var maxRotation = 0.5; // maximum rotation
 var minZeppelinY = 107;
@@ -17,7 +15,7 @@ var zeroPeopleTimer; // counts up as soon as there is no one left on the zeppeli
 var zeroPeopleTimeout = 0.5; // how many seconds until the zeppelin drops when zero people are on board
 
 var meters = 0;
-var maxDistance = 9001; // this is the distance to the final destination
+var maxDistance = 1000;//9001; // this is the distance to the final destination
 var timer = 0; // for spawning people etc.
 
 var game = new Phaser.Game(
@@ -124,8 +122,18 @@ function create ()
 	peopleGroup = game.add.group();
 	//peopleGroup.enableBody = true;
 	//peopleGroup.phyicsBodyType = Phaser.Physics.P2JS;
-	for (var i = 0; i < 4; i++) {
-		person = spawnPerson(i, 64 + i*32, zeppelin.y);
+	
+	// initial group of people
+	{
+		var typesSpawned = [];
+		for (var i = 0; i < 6; i++) {
+			var type = Math.floor(Math.random() * 8);
+			while (typesSpawned[type] == 1) {
+				type = (type + 1) % 8;
+			}
+			typesSpawned[type] = 1;
+			person = spawnPerson(type, 64 + i*32, zeppelin.y);
+		}
 	}
 
 	balloonGroup = game.add.group();
@@ -170,9 +178,7 @@ function create ()
 	goreEmitter.setXSpeed(-300,-100);
 	
 	// NPE
-	balloon = spawnPersonOnBalloon(8, 400, 680);
-	game.time.events.add(4000, function() {if (balloon != null && balloon.body != null) pop(balloon)}, self);
-	
+	npePerson = spawnPersonOnBalloon(8, 530, 680);
 }
 
 function update ()
@@ -198,8 +204,12 @@ function update ()
 			zeppelin.body.x += 1;
 			for(var i in peopleGroup.children) {
 				peopleGroup.children[i].body.x += 1;
-				peopleGroup.children[i].body.velocity[0] = 0;
 			}
+		} else {
+			if (zeppelin.body.y >= zeppelinLandY - 0.1 && Math.abs(zeppelin.body.rotation) < 0.00001 && winScreen == null) {
+				showWinScreen();
+			}
+			game.physics.p2.friction = 1;
 		}
 	}
 	meters += xVel;
@@ -207,7 +217,7 @@ function update ()
 	
 	setDistanceBar(meters/maxDistance);
 
-	if (meters < maxDistance && timer % 360 == 0 && xVel > 0) {
+	if (meters < maxDistance && timer % 360 == 0 && xVel > 0 && npePerson == null) {
 		var v = Phaser.Math.between(0, 11);
 		if (Math.floor(Math.random() * 2)) {
 			spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
@@ -218,7 +228,7 @@ function update ()
 		}
 	}
 	
-	if (meters < maxDistance && timer % 300 == 0 && Math.random() < 0.5) {
+	if (meters < maxDistance && npePerson == null && timer % 300 == 0 && Math.random() < 0.5) {
 		spawnBird(512+32, zeppelin.y + Phaser.Math.between(-120, 160));
 	}
 	
@@ -372,6 +382,7 @@ function update ()
 	updateZeppelin();
 	updateWaterCurrent();
 	updateRopes();
+	if (npePerson != null) updateNpePerson();
 
 	debugText.y = 240 + game.camera.view.y / game.camera.scale.y; 
 	//zeppelin.body.rotateRight(1);
@@ -469,7 +480,10 @@ function updateZeppelin()
 
 	// do the tilt!
 	var rotationDistance = zeppelinTargetRotation - zeppelin.body.rotation;
-	if (rotationDistance > 0) {
+	if (Math.abs(rotationDistance) < 0.001) {
+		zeppelin.body.rotation = zeppelinTargetRotation;
+		zeppelin.body.angularVelocity = 0;
+	} else if (rotationDistance > 0) {
 		zeppelin.body.rotateRight(rotateSpeed);
 	} else if (rotationDistance < 0) {
 		zeppelin.body.rotateLeft(rotateSpeed);
@@ -563,6 +577,9 @@ function spawnPerson(i, x, y)
 
 function destroyPerson(person)
 {
+	if (person === npePerson) {
+		npePerson = null;
+	}
 	// make sure the person is not referenced anymore
 	for (var i in peopleGroup.children)
 	{
@@ -651,7 +668,7 @@ function spawnPersonOnBalloon(i, x, y){
 	person.body.ropeConstraint = ropeConstraint;
 	balloon.body.ropeConstraint = ropeConstraint;
 	
-	return balloon;
+	return person;
 }
 
 function spawnMine(x, y){
@@ -827,6 +844,20 @@ function spawnGoreParticles(x, y, minVelX, maxVelX)
 	goreEmitter.setXSpeed(minVelX, maxVelX);
 
 	goreEmitter.start(true, 2000, null, 20);
+}
+
+function updateNpePerson()
+{
+	if (npePerson.body.y > zeppelin.body.y + 32) {
+		npePerson.body.y--;
+	}
+	if (npePerson.body.x < zeppelin.body.x + 130) {
+		if (npePerson.body != null && npePerson.body.ropeConstraint != null) {
+			var balloon = npePerson.body.ropeConstraint.bodyA.parent.sprite;
+			if (balloon != null) pop(balloon);
+		}
+		npePerson = null;
+	}
 }
 
 function render()
