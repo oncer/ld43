@@ -1,5 +1,5 @@
-//TODO: start on click
 //TODO: fadein/out für restart
+//TODO: loading screen
 //XXX: mehrere ballons pro person
 
 class GameState extends Phaser.State
@@ -43,6 +43,7 @@ preload ()
 	game.load.image('start_screen', 'gfx/startscreen.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 	game.load.audio('music', 'sfx/theme.ogg');
+	game.load.audio('wavesAudio', 'sfx/crisp_ocean_waves.ogg');
 	game.load.audio('shredSound', 'sfx/placeholder.ogg');
 	game.load.audio('popSound', 'sfx/placeholder.ogg');
 	game.load.audio('explosionSound', 'sfx/placeholder.ogg');
@@ -178,15 +179,24 @@ create ()
 	this.goreEmitter.gravity = 200;
 	this.goreEmitter.setXSpeed(-300,-100);
 
-	//start screen
-	this.showStartScreen();
 	
 	//define soundeffects
+	this.wavesAudio = game.add.audio('wavesAudio');
 	this.music = game.add.audio('music');
 	this.shredSound = game.add.audio('shredSound');
 	this.popSound = game.add.audio('popSound');
 	this.explosionSound = game.add.audio('explosionSound');
 	this.birdSound = game.add.audio('birdSound');
+
+	//start screen
+	this.showStartScreen();
+	//play ocean waves audio
+	this.wavesAudio.onDecoded.add(function(){
+		if (!this.start) {
+			this.wavesAudio.play('', 0, 0, true);
+			this.wavesAudio.fadeTo(1000, 0.3);
+		}
+	}, this);
 }
 
 startGame()
@@ -201,12 +211,13 @@ startGame()
 
 	this.propeller.animations.add('propel').play(15, true);
 	
+	this.wavesAudio.fadeOut(4000);
 	this.music.play('', 0, 1, true);
-	
 }
 
 restartGame()
 {
+	this.wavesAudio.stop();
 	this.music.stop();
 	game.state.start(game.state.current);
 }
