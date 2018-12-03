@@ -167,6 +167,10 @@ function create ()
 	goreEmitter.gravity = 200;
 	goreEmitter.maxParticles = 500;
 	goreEmitter.setXSpeed(-300,-100);
+	
+	// NPE
+	balloon = spawnPersonOnBalloon(8, 400, 680);
+	game.time.events.add(4000, function() {pop(balloon)}, self);
 }
 
 function update ()
@@ -212,8 +216,8 @@ function update ()
 		}
 	}
 	
-	if (meters < maxDistance && timer % 300 == 0) {
-		spawnBird(512-32, zeppelin.y + Phaser.Math.between(-64, 64));
+	if (meters < maxDistance && timer % 300 == 0 && Math.random() < 0.5) {
+		spawnBird(512+32, zeppelin.y + Phaser.Math.between(-120, 160));
 	}
 	
 	// mouse/touch logic
@@ -631,6 +635,8 @@ function spawnPersonOnBalloon(i, x, y){
 
 	person.body.ropeConstraint = ropeConstraint;
 	balloon.body.ropeConstraint = ropeConstraint;
+	
+	return balloon;
 }
 
 function spawnMine(x, y){
