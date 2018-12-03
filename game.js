@@ -41,6 +41,10 @@ preload ()
 	game.load.image('start_screen', 'gfx/startscreen.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 	game.load.audio('music', 'sfx/theme.ogg');
+	game.load.audio('shredSound', 'sfx/placeholder.ogg');
+	game.load.audio('popSound', 'sfx/placeholder.ogg');
+	game.load.audio('explosionSound', 'sfx/placeholder.ogg');
+	game.load.audio('birdSound', 'sfx/placeholder.ogg');
 }
 
 create ()
@@ -180,6 +184,11 @@ create ()
 	
 	this.music = game.add.audio('music');
 	this.music.play('', 0, 1, true);
+	
+	this.shredSound = game.add.audio('shredSound');
+	this.popSound = game.add.audio('popSound');
+	this.explosionSound = game.add.audio('explosionSound');
+	this.birdSound = game.add.audio('birdSound');
 }
 
 update ()
@@ -698,6 +707,7 @@ pop(balloon)
 	this.destroyRope(balloon);
 	balloon.popped = true;
 	balloon.popTime = this.T;
+	this.popSound.play();
 }
 
 spawnPersonOnBalloon(i, x, y){
@@ -839,6 +849,7 @@ personShredded(body1, body2){
 		//goreEmitter.area = body2.sprite.getLocalBounds()
 		this.spawnGoreParticles(body2.x, body2.y, -300, -100);
 		this.destroyPerson(body2.sprite);
+		this.shredSound.play();
 	}
 }
 
