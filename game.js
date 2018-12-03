@@ -395,11 +395,11 @@ update ()
 }
 
 showWinScreen() {
-	winScreen = game.add.sprite(0, 0, 'win_screen');
+	winScreen = game.add.sprite(0, 16, 'win_screen');
 	winScreen.fixedToCamera = true;
 	
 	winScreen.alpha = 0;
-	game.add.tween(winScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0, 0, false);
+	game.add.tween(winScreen).to( { alpha: 1 }, 200, Phaser.Easing.Linear.None, true, 0, 0, false);
 }
 
 showLoseScreen() {
@@ -407,17 +407,14 @@ showLoseScreen() {
 	this.loseScreen.fixedToCamera = true;
 	
 	this.loseScreen.alpha = 0;
-	game.add.tween(this.loseScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0, 0, false);
+	game.add.tween(this.loseScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Exponential.Out, true, 0, 0, false);
 }
 
 showStartScreen() {
 	this.titleScreen = game.add.sprite(0, 0, 'start_screen');
 	this.titleScreen.fixedToCamera = true;
-	
-	console.log(this.titleScreen);
-	
 	var tween = game.add.tween(this.titleScreen)
-	tween.to( { alpha: 0 }, 4000, Phaser.Easing.Linear.None, true, 0, 0, false);
+	tween.to( { alpha: 0 }, 3000, Phaser.Easing.Exponential.In, true, 0, 0, false);
 	tween.onComplete.add(this.showStartScreen2, this);
 }
 
