@@ -43,10 +43,10 @@ preload ()
 	game.load.image('start_screen', 'gfx/startscreen.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 	game.load.audio('music', 'sfx/theme.ogg');
-	game.load.audio('shredSound', 'sfx/placeholder.ogg');
-	game.load.audio('popSound', 'sfx/placeholder.ogg');
+	game.load.audio('shredSound', 'sfx/splatter.ogg');
+	game.load.audio('popSound', 'sfx/balloon_pop.ogg');
 	game.load.audio('explosionSound', 'sfx/placeholder.ogg');
-	game.load.audio('birdSound', 'sfx/placeholder.ogg');
+	game.load.audio('birdSound', 'sfx/placeholder.ogg');	
 }
 
 create ()
