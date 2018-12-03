@@ -1,7 +1,10 @@
 var maxRotation = 0.5; // maximum rotation
 var minZeppelinY = 108;
 var zeppelinLandY = 714;
+var waterY = 832;
 var goreEmitter;
+var zeroPeopleTimer; // counts up as soon as there is no one left on the zeppelin
+var zeroPeopleTimeout = 0.5; // how many seconds until the zeppelin drops when zero people are on board
 
 var meters = 0;
 var maxDistance = 3000; // this is the distance to the final destination
@@ -29,9 +32,10 @@ function preload ()
 	game.load.spritesheet('hudDistanceCursor', 'gfx/hud_distance_cursor.png', 16, 16);
 	game.load.spritesheet('gore', 'gfx/gore.png', 16, 16);
 	game.load.spritesheet('mine', 'gfx/mine.png', 32, 32);
+	game.load.spritesheet('explosion', 'gfx/explosion.png', 64, 64);
+	game.load.image('rope', 'gfx/rope.png');
 	game.load.image('island_start', 'gfx/island_start.png');
 	game.load.image('island_end', 'gfx/island_end.png');
-	game.load.image('rope', 'gfx/rope.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
 
@@ -119,6 +123,8 @@ function create ()
 	mouseBody = new p2.Body();
 	game.physics.p2.world.addBody(mouseBody);
 
+	mineGroup = game.add.group();
+
 	// ocean waves
 	oceanGroup = game.add.group();
 	var f = 0;
@@ -140,6 +146,8 @@ function create ()
 	distanceBarCursor.fixedToCamera = true;
 	setDistanceBar(0);
 
+	explosionGroup = game.add.group();
+
 	// gore emmiter
 	goreEmitter = game.add.emitter(0, 0, 100);
 	goreEmitter.makeParticles('gore', [0,1,2,3,4,5,6]);
@@ -147,10 +155,6 @@ function create ()
 	goreEmitter.maxParticles = 500;
 	goreEmitter.setXSpeed(-300,-100);
 	
-	mineGroup = game.add.group();
-	
-
-
 }
 
 function update ()
@@ -164,7 +168,9 @@ function update ()
 	var mouseX = game.input.activePointer.position.x / game.camera.scale.y;
 	var mouseY = (game.input.activePointer.position.y + game.camera.view.y) / game.camera.scale.y;
 
-	if (meters < maxDistance) {
+	if (zeroPeopleTimer >= zeroPeopleTimeout) {
+		xVel = Math.max(xVel - .002, 1);
+	} else if (meters < maxDistance) {
 		xVel = Math.min(xVel + .002, 1);
 	} else {
 		xVel = 0
@@ -231,9 +237,6 @@ function update ()
 				for (var i in balloonClicked) {
 					balloon = balloonClicked[i];
 					if (!balloon.parent.sprite.popped) {
-						balloon.parent.ropeConstraint.bodyB.parent.ropeConstraint = null;
-						game.physics.p2.removeConstraint(balloon.parent.ropeConstraint);
-						balloon.parent.ropeConstraint = null;
 						pop(balloon.parent.sprite);
 						break;
 					}
@@ -274,9 +277,6 @@ function update ()
 		if (balloon.popped) {
 			if ((T - balloon.popTime)*30 > balloon.frame){
 				if (balloon.frame == 3){
-					if (balloon.rope != null) {
-						balloon.rope.destroy();
-					}
 					balloon.destroy();
 				} else {
 					balloon.frame += 1;
@@ -286,6 +286,14 @@ function update ()
 
 		} else {		   
 			balloon.body.applyForce([0.1, game.physics.p2.gravity.y/10 + 0.01], 0, 0);
+		}
+	}
+
+	// update mines
+	for (var i in mineGroup.children) {
+		var mine = mineGroup.children[i];
+		if (mine.y >= waterY) {
+			explodeMine(mine);
 		}
 	}
 
@@ -380,12 +388,25 @@ function updateZeppelin()
 		// won!
 		zeppelinTargetRotation = 0;
 	}
+	var rotateSpeed = 1;
+
+	if (peopleOnZeppelin.length > 0) {
+		zeroPeopleTimer = 0;
+	} else {
+		zeroPeopleTimer += deltaT;
+		if (zeroPeopleTimer > 0.5) {
+			zeppelinTargetRotation = 1; // steep decline
+			rotateSpeed = 5;
+			xVel -= 0.01;
+		}
+	}
+
 	// do the tilt!
 	var rotationDistance = zeppelinTargetRotation - zeppelin.body.rotation;
 	if (rotationDistance > 0) {
-		zeppelin.body.rotateRight(1);
+		zeppelin.body.rotateRight(rotateSpeed);
 	} else if (rotationDistance < 0) {
-		zeppelin.body.rotateLeft(1);
+		zeppelin.body.rotateLeft(rotateSpeed);
 	}
 
 	// calculate Y velocity
@@ -426,7 +447,7 @@ function updateWaterCurrent()
 	for (var i in peopleGroup.children)
 	{
 		var person = peopleGroup.children[i];
-		if (person.body.y > game.world.bounds.height - 32) {
+		if (person.body.y > waterY) {
 			person.inWater = true;
 			person.body.moveLeft(100);
 			if (person.body.y > game.world.bounds.height - 48) {
@@ -527,6 +548,15 @@ function spawnBalloon(x, y){
 }
 
 function pop(balloon){
+	if (balloon.body.ropeConstraint != null) {
+		balloon.body.ropeConstraint.bodyB.parent.ropeConstraint = null;
+		game.physics.p2.removeConstraint(balloon.body.ropeConstraint);
+
+		balloon.body.ropeConstraint = null;
+	}
+	if (balloon.rope != null) {
+		balloon.rope.destroy();
+	}
 	balloon.popped = true;
 	balloon.popTime = T;
 }
@@ -561,8 +591,8 @@ function spawnMineOnBalloon(x, y){
 }
 
 function mineCollides(body1, body2){
-	//trigger explode animation
-	//damage airship
+	//TODO: damage airship
+
 	//apply impulse to all persons, based on distance to mine
 	strength = -200
 	for (var i in peopleGroup.children) {
@@ -577,14 +607,20 @@ function mineCollides(body1, body2){
 	}
 	
 	
-	//remove mine
-	body1.clearCollision();
-	if (body1.ropeConstraint != null){
-		pop(body1.ropeConstraint.bodyA.parent.sprite);
-		game.physics.p2.removeConstraint(body1.ropeConstraint);
-		body1.ropeConstraint = null;
-		body2.ropeConstraint = null;
+	explodeMine(body1.sprite);
+	body2.ropeConstraint = null;
+}
+
+function explodeMine(mine)
+{
+	mine.body.clearCollision();
+	if (mine.body.ropeConstraint != null){
+		pop(mine.body.ropeConstraint.bodyA.parent.sprite);
+		game.physics.p2.removeConstraint(mine.body.ropeConstraint);
+		mine.body.ropeConstraint = null;
 	}
+	spawnExplosion(mine.x, mine.y);
+	mine.destroy();
 }
 
 function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
@@ -655,6 +691,15 @@ function updateRopes()
 			}
 		}
 	}
+}
+
+function spawnExplosion(x, y)
+{
+	var explosion = explosionGroup.create(x, y, 'explosion');
+	explosion.anchor.set(0.5, 0.5);
+	var anim = explosion.animations.add('explode');
+	anim.play(30);
+	anim.onComplete.add(function(){ explosion.destroy(); });
 }
 
 function render()
