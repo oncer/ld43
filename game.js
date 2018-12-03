@@ -1,3 +1,14 @@
+//TODO: win screen
+//TODO: lose screen
+//TODO: anfangsbedingungen
+//TODO: leute zerstören wenn sie links rausfliegen
+//TODO: explosionspartikel in richtige richtung
+//TODO: minen über zeppelin droppen
+//TODO: minen mit stahlballons
+//TODO: ballons in verschiedenen farben
+//XXX: vögel
+//XXX: mehrere ballons pro person
+
 var maxRotation = 0.5; // maximum rotation
 var minZeppelinY = 108;
 var zeppelinLandY = 714;
@@ -68,7 +79,7 @@ function create ()
 	propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
 	propeller.animations.add('propel').play(15, true);
 
-	zeppelin = game.add.sprite(164, zeppelinLandY, 'zeppelin');
+	zeppelin = game.add.sprite(164, zeppelinLandY - 4, 'zeppelin');
 	game.physics.enable(zeppelin, Phaser.Physics.P2JS);
 	//zeppelin.addChild(propeller);
 	zeppelin.body.static = true;
@@ -151,7 +162,6 @@ function create ()
 	goreEmitter.gravity = 200;
 	goreEmitter.maxParticles = 500;
 	goreEmitter.setXSpeed(-300,-100);
-	
 }
 
 function update ()
@@ -190,7 +200,9 @@ function update ()
 		if (Math.floor(Math.random() * 2)) {
 			spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
 		} else {
-			spawnMineOnBalloon(512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
+			var steel = false;
+			if (Math.random() < 0.5) steel = true;
+			spawnMineOnBalloon(512 + 32, zeppelin.y + Phaser.Math.between(-64, 64), steel);
 		}
 	}
 	
@@ -273,24 +285,42 @@ function update ()
 		var balloon = balloonGroup.children[b];
 		if (balloon.popped) {
 			if ((T - balloon.popTime)*30 > balloon.frame){
-				if (balloon.frame == 4){
+				if (balloon.frame % 5 == 4){
 					balloon.destroy();
 				} else {
 					balloon.frame += 1;
 					balloon.body.applyForce([0, game.physics.p2.gravity.y/20], 0, 0);
 				}
 			}
-
 		} else {		   
 			balloon.body.applyForce([0.1, game.physics.p2.gravity.y/10 + 0.01], 0, 0);
+			if (balloon.body.x < -32) {
+				destroyRope(balloon);
+				balloon.destroy();
+			}
 		}
 	}
 
 	// update mines
 	for (var i in mineGroup.children) {
 		var mine = mineGroup.children[i];
-		if (mine.y >= waterY) {
+		// drop mine over zeppelin
+		if (mine.body.y < zeppelin.body.y + 64
+			 && mine.body.x <= zeppelin.body.x + mine.dropOffset
+			 && mine.body.ropeConstraint != null) {
+			var balloon = mine.body.ropeConstraint.bodyA.parent.sprite;
+			if (balloon != null) pop(balloon);
+		}
+		if (mine.body.y >= waterY) {
 			explodeMine(mine);
+		}
+	}
+
+	// update people
+	for (var i in peopleGroup.children) {
+		var person = peopleGroup.children[i];
+		if (person.body.x < -32) {
+			destroyPerson(person);
 		}
 	}
 
@@ -519,7 +549,7 @@ function balloonShredded(body1, body2)
 	}
 }
 
-function spawnBalloon(x, y){
+function spawnBalloon(x, y, steel){
 	var ropeGroup = game.add.group();
 	ropesGroup.add(ropeGroup);
 	ropeGroup.createMultiple(16, 'rope');
@@ -527,7 +557,11 @@ function spawnBalloon(x, y){
 		ropeGroup.children[i].anchor.set(0.5, 0.5);
 	}
 	var balloon = balloonGroup.create(x, y, 'balloon');
-	balloon.frame = 0;
+	if (steel) {
+		balloon.frame = 15;
+	} else {
+		balloon.frame = Math.floor(Math.random() * 3) * 5;
+	}
 	game.physics.p2.enable(balloon, false);
 	balloon.body.setCollisionGroup(balloonCollisionGroup);
 	balloon.body.collides(propellerCollisionGroup);
@@ -539,12 +573,14 @@ function spawnBalloon(x, y){
 	balloon.angularDamping = 0.995;
 	balloon.body.ropeConstraint = null;
 	balloon.popped = false;
+	balloon.steel = steel;
 	balloon.rope = ropeGroup;
 
 	return balloon;
 }
 
-function pop(balloon){
+function destroyRope(balloon)
+{
 	if (balloon.body.ropeConstraint != null) {
 		balloon.body.ropeConstraint.bodyB.parent.ropeConstraint = null;
 		game.physics.p2.removeConstraint(balloon.body.ropeConstraint);
@@ -554,13 +590,17 @@ function pop(balloon){
 	if (balloon.rope != null) {
 		balloon.rope.destroy();
 	}
+}
+
+function pop(balloon){
+	destroyRope(balloon);
 	balloon.popped = true;
 	balloon.popTime = T;
 }
 
 function spawnPersonOnBalloon(i, x, y){
 	person = spawnPerson(i, x, y);
-	balloon = spawnBalloon(x + 2, y - 32);
+	balloon = spawnBalloon(x + 2, y - 32, false);
 	ropeConstraint = this.game.physics.p2.createDistanceConstraint(balloon.body, person.body, 20, [0,15], [0,-1])
 
 	person.body.ropeConstraint = ropeConstraint;
@@ -570,6 +610,7 @@ function spawnPersonOnBalloon(i, x, y){
 function spawnMine(x, y){
 	var mine = mineGroup.create(x, y, 'mine');
 	mine.frame = 0;
+	mine.dropOffset = Math.random() * 32;
 	game.physics.p2.enable(mine, false);
 	mine.body.setCollisionGroup(mineCollisionGroup);
 	mine.body.collides([propellerCollisionGroup, zeppelinCollisionGroup, peopleCollisionGroup, mineCollisionGroup], mineCollides, self);
@@ -578,9 +619,9 @@ function spawnMine(x, y){
 	return mine;
 }
 	
-function spawnMineOnBalloon(x, y){
+function spawnMineOnBalloon(x, y, steel){
 	mine = spawnMine(x, y);
-	balloon = spawnBalloon(x + 2, y - 32);
+	balloon = spawnBalloon(x + 2, y - 32, steel);
 	ropeConstraint = this.game.physics.p2.createDistanceConstraint(balloon.body, mine.body, 20, [0,15], [0,-1])
 
 	mine.body.ropeConstraint = ropeConstraint;
@@ -601,23 +642,31 @@ function mineCollides(body1, body2){
 		//console.log(dx/distanceSq);
 		//console.log(dy/distanceSq);
 		person.body.applyImpulse([strength * dx/distanceSq, strength * dy/distanceSq], 0, 0);
+		if (distanceSq < 40 * 40) {
+			personExploded(body1, person.body);
+		}
 	}
-	
 	
 	explodeMine(body1.sprite);
 	body2.ropeConstraint = null;
 }
 
-function explodeMine(mine)
+function destroyMine(mine)
 {
-	mine.body.clearCollision();
 	if (mine.body.ropeConstraint != null){
-		pop(mine.body.ropeConstraint.bodyA.parent.sprite);
+		var balloon = mine.body.ropeConstraint.bodyA.parent.sprite;
+		if (balloon != null) pop(balloon);
 		game.physics.p2.removeConstraint(mine.body.ropeConstraint);
 		mine.body.ropeConstraint = null;
 	}
-	spawnExplosion(mine.x, mine.y);
 	mine.destroy();
+}
+
+function explodeMine(mine)
+{
+	mine.body.clearCollision();
+	spawnExplosion(mine.x, mine.y);
+	destroyMine(mine);
 }
 
 function personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
@@ -652,14 +701,18 @@ function setDistanceBar(value){
 	distanceBarCursor.cameraOffset.x = 376 + value * 242
 }
 
+function personExploded(body1, body2){
+	if (body2 != null && body2.sprite != null){
+		//goreEmitter.area = body2.sprite.getLocalBounds()
+		spawnGoreParticles(body2.x, body2.y, -200, 200)
+		destroyPerson(body2.sprite);
+	}
+}
+
 function personShredded(body1, body2){
 	if (body2 != null && body2.sprite != null){
 		//goreEmitter.area = body2.sprite.getLocalBounds()
-		
-		goreEmitter.x = body2.x;
-		goreEmitter.y = body2.y;
-		
-		goreEmitter.start(true, 2000, null, 20);
+		spawnGoreParticles(body2.x, body2.y, -300, -100);
 		destroyPerson(body2.sprite);
 	}
 }
@@ -697,6 +750,15 @@ function spawnExplosion(x, y)
 	var anim = explosion.animations.add('explode');
 	anim.play(30);
 	anim.onComplete.add(function(){ explosion.destroy(); });
+}
+
+function spawnGoreParticles(x, y, minVelX, maxVelX)
+{
+	goreEmitter.x = x;
+	goreEmitter.y = y;
+	goreEmitter.setXSpeed(minVelX, maxVelX);
+
+	goreEmitter.start(true, 2000, null, 20);
 }
 
 function render()
