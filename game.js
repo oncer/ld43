@@ -1,5 +1,3 @@
-//TODO: explosionen wenn zeppelin untergeht
-//TODO: win screen
 //TODO: lose screen
 //TODO: nur personen spawnen die noch nicht an bord sind
 //XXX: mehrere ballons pro person
@@ -15,7 +13,7 @@ var zeroPeopleTimer; // counts up as soon as there is no one left on the zeppeli
 var zeroPeopleTimeout = 0.5; // how many seconds until the zeppelin drops when zero people are on board
 
 var meters = 0;
-var maxDistance = 1000;//9001; // this is the distance to the final destination
+var maxDistance = 9001; // this is the distance to the final destination
 var timer = 0; // for spawning people etc.
 
 var game = new Phaser.Game(
@@ -128,13 +126,13 @@ function create ()
 	// initial group of people
 	{
 		var typesSpawned = [];
-		for (var i = 0; i < 6; i++) {
+		for (var i = 0; i < 5; i++) {
 			var type = Math.floor(Math.random() * 8);
 			while (typesSpawned[type] == 1) {
 				type = (type + 1) % 8;
 			}
 			typesSpawned[type] = 1;
-			person = spawnPerson(type, 64 + i*32, zeppelin.y);
+			person = spawnPerson(type, 84 + i*24 + Math.random() * 6, zeppelin.y);
 		}
 	}
 
@@ -172,11 +170,10 @@ function create ()
 
 	explosionGroup = game.add.group();
 
-	// gore emmiter
+	// gore emitter
 	goreEmitter = game.add.emitter(0, 0, 100);
-	goreEmitter.makeParticles('gore', [0,1,2,3,4,5,6]);
+	goreEmitter.makeParticles('gore', [0,1,2,3,4,5,6], 300);
 	goreEmitter.gravity = 200;
-	goreEmitter.maxParticles = 500;
 	goreEmitter.setXSpeed(-300,-100);
 	
 	// NPE
@@ -223,6 +220,15 @@ function update ()
 
 	if (meters < maxDistance && timer % 360 == 0 && xVel > 0 && npePerson == null) {
 		var v = Phaser.Math.between(0, 11);
+		var typesNotOnZeppelin = [];
+		for (var i = 0; i < 12; i++) {
+			if (!personTypeOnZeppelin(v)) {
+				typesNotOnZeppelin.push(v);
+			}
+		}
+		if (typesNotOnZeppelin.length > 0) {
+			v = typesNotOnZeppelin[Phaser.Math.between(0, typesNotOnZeppelin.length - 1)];
+		}
 		if (Math.floor(Math.random() * 2)) {
 			spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
 		} else {
@@ -341,7 +347,7 @@ function update ()
 			 && mine.body.x <= zeppelin.body.x + mine.dropOffset
 			 && mine.body.ropeConstraint != null) {
 			var balloon = mine.body.ropeConstraint.bodyA.parent.sprite;
-			console.log("cam " + game.camera.view.y + " mine " + mine.body.y);
+			//console.log("cam " + game.camera.view.y + " mine " + mine.body.y);
 			if (balloon != null) destroyRope(balloon);
 		}
 		if (mine.body.y >= waterY) {
@@ -886,6 +892,14 @@ function updateNpePerson()
 		}
 		npePerson = null;
 	}
+}
+
+function personTypeOnZeppelin(type)
+{
+	for (var i in peopleOnZeppelin) {
+		if (peopleOnZeppelin[i].frame === type) return true;
+	}
+	return false;
 }
 
 function render()
