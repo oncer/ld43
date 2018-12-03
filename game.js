@@ -1,5 +1,6 @@
 var maxRotation = 0.5; // maximum rotation
 var minZeppelinY = 108;
+var zeppelinLandY = 714;
 var goreEmmiter;
 
 var meters = 0;
@@ -66,7 +67,7 @@ function create ()
 	propeller = game.add.sprite(26, game.world.height - 80, 'propeller');
 	propeller.animations.add('propel').play(15, true);
 
-	zeppelin = game.add.sprite(164, game.world.height - 154, 'zeppelin');
+	zeppelin = game.add.sprite(164, zeppelinLandY, 'zeppelin');
 	game.physics.enable(zeppelin, Phaser.Physics.P2JS);
 	//zeppelin.addChild(propeller);
 	zeppelin.body.static = true;
@@ -169,10 +170,6 @@ function update ()
 		xVel = 0
 		
 		// ~~~ Winning Condition ~~~
-
-		// TODO: neutralize tilt, lower zeppelin, disable dragging people,....
-
-		game.camera.follow(null);
 		if (zeppelin.body.x < game.world.width - 128) {
 			zeppelin.body.x += 1;
 			for(var i in peopleGroup.children) {
@@ -185,8 +182,7 @@ function update ()
 	
 	setDistanceBar(meters/maxDistance);
 
-	// TODO: not spawn if winning condition is met.
-	if (timer % 360 == 0) {
+	if (meters < maxDistance && timer % 360 == 0) {
 		var v = Phaser.Math.between(0, 11);
 		if (Math.floor(Math.random() * 2)) {
 			spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
@@ -196,7 +192,7 @@ function update ()
 	}
 	
 	// mouse/touch logic
-	if (game.input.activePointer.isDown) {
+	if (game.input.activePointer.isDown && meters < maxDistance) {
 		mouseBody.position[0] = game.physics.p2.pxmi(mouseX);
 		mouseBody.position[1] = game.physics.p2.pxmi(mouseY);
 		var clickPos = new Phaser.Point(game.physics.p2.pxmi(mouseX), game.physics.p2.pxmi(mouseY));
@@ -245,7 +241,6 @@ function update ()
 			}
 
 		} else {
-
 			// moves to the top z-layer
 			personClicked.parent.sprite.moveUp();
 			// disables collision with other people
@@ -379,10 +374,12 @@ function updateZeppelin()
 		peopleMass++;
 	}
 	var rotationScale = Math.min(1, Math.abs(zeppelinSumWeight / 30));
-	zeppelinTargetRotation = maxRotation * rotationScale * Math.sign(zeppelinSumWeight);
-	debugText.text += "\n";
-	debugText.text += "meters: " + meters;
-
+	if (meters < maxDistance) {
+		zeppelinTargetRotation = maxRotation * rotationScale * Math.sign(zeppelinSumWeight);
+	} else {
+		// won!
+		zeppelinTargetRotation = 0;
+	}
 	// do the tilt!
 	var rotationDistance = zeppelinTargetRotation - zeppelin.body.rotation;
 	if (rotationDistance > 0) {
@@ -396,9 +393,17 @@ function updateZeppelin()
 	c1 = -100;
 	c2 = 0;
 	c3 = 0;
-	zeppelinTargetYV = c1 * zeppelin.body.rotation +
-		c2 * (zeppelinWeightCapacity - peopleMass) +
-		c3 * Math.sin(T);
+	if (meters < maxDistance) {
+		zeppelinTargetYV = c1 * zeppelin.body.rotation +
+			c2 * (zeppelinWeightCapacity - peopleMass) +
+			c3 * Math.sin(T);
+	} else {
+		// won!
+		zeppelinTargetYV = -50;
+		if (zeppelin.body.y >= zeppelinLandY) {
+			zeppelinTargetYV = 0;
+		}
+	}
 
 	if (zeppelin.body.y <= minZeppelinY) {
 		zeppelinTargetYV = 0;
@@ -406,11 +411,14 @@ function updateZeppelin()
 
 	zeppelin.body.moveUp(zeppelinTargetYV);
 
+	debugText.text += "\n";
+	debugText.text += "meters: " + meters;
+
 	debugText.text = "balance: " + zeppelinSumWeight.toFixed(2) + ", rotation: " + zeppelinTargetRotation.toFixed(2);
 	debugText.text += "\n";
 	debugText.text += "people on board: " + peopleOnZeppelin.length + ", people mass: " + peopleMass;
 	debugText.text += "\n";
-	debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2);
+	debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2) + ", current y: " + zeppelin.body.y;
 }
 
 function updateWaterCurrent()
