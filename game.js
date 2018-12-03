@@ -13,7 +13,7 @@ var zeroPeopleTimer; // counts up as soon as there is no one left on the zeppeli
 var zeroPeopleTimeout = 0.5; // how many seconds until the zeppelin drops when zero people are on board
 
 var meters = 0;
-var maxDistance = 9001; // this is the distance to the final destination
+var maxDistance = 901; // this is the distance to the final destination
 var timer = 0; // for spawning people etc.
 
 var game = new Phaser.Game(
@@ -401,11 +401,11 @@ function update ()
 }
 
 function showWinScreen() {
-	winScreen = game.add.sprite(0, 0, 'win_screen');
+	winScreen = game.add.sprite(0, 16, 'win_screen');
 	winScreen.fixedToCamera = true;
 	
 	winScreen.alpha = 0;
-	game.add.tween(winScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0, 0, false);
+	game.add.tween(winScreen).to( { alpha: 1 }, 200, Phaser.Easing.Linear.None, true, 0, 0, false);
 }
 
 function showLoseScreen() {
@@ -413,17 +413,14 @@ function showLoseScreen() {
 	loseScreen.fixedToCamera = true;
 	
 	loseScreen.alpha = 0;
-	game.add.tween(loseScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0, 0, false);
+	game.add.tween(loseScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Exponential.Out, true, 0, 0, false);
 }
 
 function showStartScreen() {
 	titleScreen = game.add.sprite(0, 0, 'start_screen');
-	titleScreen.fixedToCamera = true;
-	
-	console.log(titleScreen);
-	
-	tween = game.add.tween(titleScreen)
-	tween.to( { alpha: 0 }, 4000, Phaser.Easing.Linear.None, true, 0, 0, false);
+	titleScreen.fixedToCamera = true;	
+	tween = game.add.tween(titleScreen);
+	tween.to( { alpha: 0 }, 3000, Phaser.Easing.Exponential.In, true, 0, 0, false);
 	tween.onComplete.add(showStartScreen2, this);
 	
 }
