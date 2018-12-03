@@ -46,7 +46,7 @@ preload ()
 	game.load.audio('shredSound', 'sfx/splatter.ogg');
 	game.load.audio('wavesAudio', 'sfx/crisp_ocean_waves.ogg');
 	game.load.audio('popSound', 'sfx/balloon_pop.ogg');
-	game.load.audio('explosionSound', 'sfx/placeholder.ogg');
+	game.load.audio('explosionSound', 'sfx/explosion.ogg');
 	
 }
 
