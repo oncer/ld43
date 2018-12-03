@@ -150,6 +150,7 @@ function create ()
 	var style = { font: "14px Consolas", fill: "#ff004c", align: "center" };
 	debugText = game.add.text(256, 240, "debug text", style);
 	debugText.anchor.set(0.5);
+	debugText.exists = false;
 	// HUD
 	distanceBar = game.add.sprite(384, 10, 'hudDistance');
 	distanceBar.fixedToCamera = true;
@@ -294,7 +295,7 @@ function update ()
 		var balloon = balloonGroup.children[b];
 		balloon.body.angle = 0;
 		if (balloon.popped) {
-			if ((T - balloon.popTime)*30 > balloon.frame){
+			if ((T - balloon.popTime)*30 > (balloon.frame % 5)){
 				if (balloon.frame % 5 == 4){
 					balloon.destroy();
 				} else {
@@ -480,7 +481,7 @@ function updateZeppelin()
 	}
 
 	if (zeppelin.body.y <= minZeppelinY) {
-		zeppelinTargetYV = 0;
+		zeppelinTargetYV = Math.min(0, zeppelinTargetYV);
 	}
 
 	zeppelin.body.moveUp(zeppelinTargetYV);
