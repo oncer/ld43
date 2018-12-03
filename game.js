@@ -42,6 +42,7 @@ preload ()
 	game.load.image('lose_screen', 'gfx/losescreen.png');
 	game.load.image('start_screen', 'gfx/startscreen.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+	game.load.audio('music', 'sfx/theme.ogg');
 }
 
 create ()
@@ -175,6 +176,9 @@ create ()
 
 	//start screen
 	this.showStartScreen();
+	
+	this.music = game.add.audio('music');
+	this.music.play('', 0, 1, true);
 }
 
 startGame()
