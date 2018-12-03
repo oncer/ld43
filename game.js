@@ -194,6 +194,12 @@ startGame()
 	this.propeller.animations.add('propel').play(15, true);
 }
 
+restartGame()
+{
+	this.music.stop();
+	game.state.start(game.state.current);
+}
+
 update ()
 {
 	// time since last frame, in seconds
@@ -570,7 +576,7 @@ updateZeppelin()
 
 	if (this.loseScreen != null && this.loseScreen.alpha >= 1) {
 		if (game.input.activePointer.justPressed()) {
-			game.state.start(game.state.current);
+			this.restartGame();
 		}
 	}
 
