@@ -1,4 +1,3 @@
-//TODO: fadein/out für restart
 //TODO: loading screen
 //XXX: mehrere ballons pro person
 
@@ -203,6 +202,8 @@ create ()
 			this.wavesAudio.fadeTo(1000, 0.3);
 		}
 	}, this);
+
+	game.camera.flash('#000000');
 }
 
 startGame()
@@ -225,7 +226,10 @@ restartGame()
 {
 	this.wavesAudio.stop();
 	this.music.stop();
-	game.state.start(game.state.current);
+	game.camera.fade('#000000');
+	game.camera.onFadeComplete.add(function() {
+		game.state.start(game.state.current);
+	});
 }
 
 update ()
@@ -319,7 +323,7 @@ update ()
 					this.personClicked.toLocalFrame(localPointInBody, this.mouseBody.position);
 					// use a revoluteContraint to attach mouseBody to the clicked body
 					this.mouseConstraint = this.game.physics.p2.createRevoluteConstraint(this.mouseBody, [0, 0], this.personClicked, [game.physics.p2.mpxi(localPointInBody[0]), game.physics.p2.mpxi(localPointInBody[1])]);
-					this.peopleSound.play();
+					this.peopleSound.play('', 0, 0.3);
 					
 					//console.log(personClicked.parent.rope);
 					if (this.personClicked.parent.ropeConstraint != null){
@@ -613,6 +617,12 @@ updateZeppelin()
 		}
 	}
 
+	if (this.winScreen != null && this.winScreen.alpha >= 1) {
+		if (game.input.activePointer.justPressed()) {
+			this.restartGame();
+		}
+	}
+
 	if (this.start) {
 		this.zeppelin.body.moveUp(this.zeppelinTargetYV);
 	}
@@ -634,6 +644,7 @@ updateWaterCurrent()
 		var person = this.peopleGroup.children[i];
 		if (person.body.y > this.waterY) {
 			if (person.inWater != true && person.waterTimer > 0.5) {
+				console.log("SPLASH");
 				this.splashSound.play();
 			}
 			person.inWater = true;
