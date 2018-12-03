@@ -47,6 +47,7 @@ preload ()
 	game.load.audio('shredSound', 'sfx/splatter.mp3');
 	game.load.audio('popSound', 'sfx/balloon_pop.ogg');
 	game.load.audio('explosionSound', 'sfx/placeholder.ogg');
+	game.load.audio('birdSound', 'sfx/placeholder.ogg');
 	
 }
 
