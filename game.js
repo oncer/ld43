@@ -43,6 +43,10 @@ preload ()
 	game.load.image('start_screen', 'gfx/startscreen.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 	game.load.audio('music', 'sfx/theme.ogg');
+	game.load.audio('shredSound', 'sfx/placeholder.ogg');
+	game.load.audio('popSound', 'sfx/placeholder.ogg');
+	game.load.audio('explosionSound', 'sfx/placeholder.ogg');
+	game.load.audio('birdSound', 'sfx/placeholder.ogg');
 }
 
 create ()
@@ -177,8 +181,12 @@ create ()
 	//start screen
 	this.showStartScreen();
 	
+	//define soundeffects
 	this.music = game.add.audio('music');
-	this.music.play('', 0, 1, true);
+	this.shredSound = game.add.audio('shredSound');
+	this.popSound = game.add.audio('popSound');
+	this.explosionSound = game.add.audio('explosionSound');
+	this.birdSound = game.add.audio('birdSound');
 }
 
 startGame()
@@ -192,6 +200,9 @@ startGame()
 	tween.onComplete.add(this.showStartScreen2, this);
 
 	this.propeller.animations.add('propel').play(15, true);
+	
+	this.music.play('', 0, 1, true);
+	
 }
 
 restartGame()
@@ -723,6 +734,7 @@ pop(balloon)
 	this.destroyRope(balloon);
 	balloon.popped = true;
 	balloon.popTime = this.T;
+	this.popSound.play();
 }
 
 spawnPersonOnBalloon(i, x, y){
@@ -798,7 +810,7 @@ spawnBird(x, y) {
 	bird.body.clearShapes();
 	bird.body.addRectangle(22, 8, 0, 0);
 	bird.body.setCollisionGroup(this.birdCollisionGroup);
-	bird.body.collides([this.propellerCollisionGroup, this.zeppelinCollisionGroup, this.peopleCollisionGroup]);
+	bird.body.collides([this.propellerCollisionGroup, this.zeppelinCollisionGroup, this.peopleCollisionGroup], function(){this.birdSound.play()}, this);
 	
 	bird.body.fixedRotation = true;
 	
@@ -812,6 +824,7 @@ explodeMine(mine)
 	mine.body.clearCollision();
 	this.spawnExplosion(mine.x, mine.y);
 	this.destroyMine(mine);
+	this.explosionSound.play();
 }
 
 personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
@@ -864,6 +877,7 @@ personShredded(body1, body2){
 		//goreEmitter.area = body2.sprite.getLocalBounds()
 		this.spawnGoreParticles(body2.x, body2.y, -300, -100);
 		this.destroyPerson(body2.sprite);
+		this.shredSound.play();
 	}
 }
 
