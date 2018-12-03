@@ -689,7 +689,7 @@ function destroyMine(mine)
 
 function spawnBird(x, y) {
 	var bird = birdGroup.create(x, y, 'bird');
-	bird.frame = 0;
+	bird.animations.add('birdfly').play(15, true);
 	game.physics.p2.enable(bird, false);
 	bird.body.clearShapes();
 	bird.body.addRectangle(22, 8, 0, 0);
