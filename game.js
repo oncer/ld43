@@ -9,7 +9,7 @@
 
 var initialZeppelinWeightCapacity = 150; // could become less over time
 var maxRotation = 0.5; // maximum rotation
-var minZeppelinY = 108;
+var minZeppelinY = 107;
 var zeppelinLandY = 714;
 var waterY = 832;
 var goreEmitter;
@@ -17,7 +17,7 @@ var zeroPeopleTimer; // counts up as soon as there is no one left on the zeppeli
 var zeroPeopleTimeout = 0.5; // how many seconds until the zeppelin drops when zero people are on board
 
 var meters = 0;
-var maxDistance = 3000; // this is the distance to the final destination
+var maxDistance = 9001; // this is the distance to the final destination
 var timer = 0; // for spawning people etc.
 
 var game = new Phaser.Game(
@@ -195,7 +195,7 @@ function update ()
 	
 	setDistanceBar(meters/maxDistance);
 
-	if (meters < maxDistance && timer % 360 == 0) {
+	if (meters < maxDistance && timer % 360 == 0 && xVel > 0) {
 		var v = Phaser.Math.between(0, 11);
 		if (Math.floor(Math.random() * 2)) {
 			spawnPersonOnBalloon(v, 512 + 32, zeppelin.y + Phaser.Math.between(-64, 64));
@@ -307,11 +307,12 @@ function update ()
 		var mine = mineGroup.children[i];
 		// drop mine over zeppelin
 		if (mine.body.y < zeppelin.body.y + 64
-			 && mine.body.y > game.camera.view.y + 32
+			 && mine.body.y > (game.camera.view.y / game.camera.scale.y) + 32
 			 && mine.body.x <= zeppelin.body.x + mine.dropOffset
 			 && mine.body.ropeConstraint != null) {
 			var balloon = mine.body.ropeConstraint.bodyA.parent.sprite;
-			if (balloon != null) pop(balloon);
+			console.log("cam " + game.camera.view.y + " mine " + mine.body.y);
+			if (balloon != null) destroyRope(balloon);
 		}
 		if (mine.body.y >= waterY) {
 			explodeMine(mine);
@@ -440,7 +441,7 @@ function updateZeppelin()
 
 	// calculate Y velocity
 	windVelocity = 0;
-	var zeppelinWeightCapacity = initialZeppelinWeightCapacity * (1.2 - meters / maxDistance);
+	var zeppelinWeightCapacity = initialZeppelinWeightCapacity * (0.5 - meters / maxDistance);
 	c1 = -100;
 	c2 = 0.2;
 	c3 = 0;
@@ -467,9 +468,9 @@ function updateZeppelin()
 
 	debugText.text = "balance: " + zeppelinSumWeight.toFixed(2) + ", rotation: " + zeppelinTargetRotation.toFixed(2);
 	debugText.text += "\n";
-	debugText.text += "people on board: " + peopleOnZeppelin.length + ", people mass: " + peopleMass + "/" + zeppelinWeightCapacity;
+	debugText.text += "people on board: " + peopleOnZeppelin.length + ", people mass: " + peopleMass + "/" + zeppelinWeightCapacity.toFixed(2);
 	debugText.text += "\n";
-	debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2) + ", current y: " + zeppelin.body.y;
+	debugText.text += "target y vel: " + zeppelinTargetYV.toFixed(2) + ", current y: " + zeppelin.body.y.toFixed(2);
 }
 
 function updateWaterCurrent()
@@ -610,7 +611,7 @@ function spawnPersonOnBalloon(i, x, y){
 function spawnMine(x, y){
 	var mine = mineGroup.create(x, y, 'mine');
 	mine.frame = 0;
-	mine.dropOffset = Math.random() * 32;
+	mine.dropOffset = Math.random() * 64;
 	game.physics.p2.enable(mine, false);
 	mine.body.setCollisionGroup(mineCollisionGroup);
 	mine.body.collides([propellerCollisionGroup, zeppelinCollisionGroup, peopleCollisionGroup, mineCollisionGroup], mineCollides, self);
