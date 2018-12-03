@@ -181,9 +181,8 @@ create ()
 	//start screen
 	this.showStartScreen();
 	
+	//define soundeffects
 	this.music = game.add.audio('music');
-	this.music.play('', 0, 1, true);
-	
 	this.shredSound = game.add.audio('shredSound');
 	this.popSound = game.add.audio('popSound');
 	this.explosionSound = game.add.audio('explosionSound');
@@ -201,6 +200,9 @@ startGame()
 	tween.onComplete.add(this.showStartScreen2, this);
 
 	this.propeller.animations.add('propel').play(15, true);
+	
+	this.music.play('', 0, 1, true);
+	
 }
 
 update ()
@@ -802,7 +804,7 @@ spawnBird(x, y) {
 	bird.body.clearShapes();
 	bird.body.addRectangle(22, 8, 0, 0);
 	bird.body.setCollisionGroup(this.birdCollisionGroup);
-	bird.body.collides([this.propellerCollisionGroup, this.zeppelinCollisionGroup, this.peopleCollisionGroup]);
+	bird.body.collides([this.propellerCollisionGroup, this.zeppelinCollisionGroup, this.peopleCollisionGroup], function(){this.birdSound.play()}, this);
 	
 	bird.body.fixedRotation = true;
 	
@@ -816,6 +818,7 @@ explodeMine(mine)
 	mine.body.clearCollision();
 	this.spawnExplosion(mine.x, mine.y);
 	this.destroyMine(mine);
+	this.explosionSound.play();
 }
 
 personZeppelinBeginContact(body, bodyB, shapeA, shapeB, equation)
