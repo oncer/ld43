@@ -180,6 +180,7 @@ function create ()
 	npePerson = spawnPersonOnBalloon(8, 530, 680);
 	//start screen
 	showStartScreen();
+	loseScreenShown = false;
 }
 
 function update ()
@@ -549,6 +550,11 @@ function updateZeppelin()
 	if (zeroPeopleTimer > zeroPeopleTimeout
 		 && zeppelin.body.y + 80 > waterY) {
 		zeppelinTargetYV = Math.max(-8, Math.min(0.0, zeppelinTargetYV));
+	}
+	
+	if (zeppelin.body.y + 60 > waterY && loseScreenShown == false) {
+		showLoseScreen();
+		loseScreenShown = true
 	}
 
 	zeppelin.body.moveUp(zeppelinTargetYV);
