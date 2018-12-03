@@ -1,20 +1,11 @@
 ~~~ TODO ~~~
 
 HUD:
-	- Air: Bar meter == HP!
-	-> Getting Hit -> loose updrift -> constantly
 	
 obstacles:
 
-	- birds
-	- rockets?
-	- mines (on baloon)
-
-Win & Lose condition!!
-	- Win: (is in TODO in the code)
-	- Lose:
-		- All people are dead
-		-> Kill people when they have x < 0
+	- birds - maybe not
+	- rockets - maybe not
 
 MUSIC & SOUNDS
 	- BGM
