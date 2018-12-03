@@ -196,7 +196,7 @@ create ()
 	this.peopleSound = game.add.audio('peopleSound');
 	this.throwSound = game.add.audio('throwSound');
 	this.warningSound = game.add.audio('warningSound');
-	this.warningSoundArmed = true; // can/should it be played
+	this.warningSoundArmed = false; // can/should it be played
 	
 	this.loseSoundPlayed = false;
 	
