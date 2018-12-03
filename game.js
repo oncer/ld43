@@ -46,6 +46,8 @@ function preload ()
 	game.load.image('island_start', 'gfx/island_start.png');
 	game.load.image('island_end', 'gfx/island_end.png');
 	game.load.image('win_screen', 'gfx/winscreen.png');
+	game.load.image('lose_screen', 'gfx/losescreen.png');
+	game.load.image('start_screen', 'gfx/startscreen.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
 
@@ -179,6 +181,8 @@ function create ()
 	
 	// NPE
 	npePerson = spawnPersonOnBalloon(8, 530, 680);
+	//start screen
+	showStartScreen();
 }
 
 function update ()
@@ -395,6 +399,30 @@ function showWinScreen() {
 	
 	winScreen.alpha = 0;
 	game.add.tween(winScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0, 0, false);
+}
+
+function showLoseScreen() {
+	loseScreen = game.add.sprite(0, 0, 'lose_screen');
+	loseScreen.fixedToCamera = true;
+	
+	loseScreen.alpha = 0;
+	game.add.tween(loseScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0, 0, false);
+}
+
+function showStartScreen() {
+	titleScreen = game.add.sprite(0, 0, 'start_screen');
+	titleScreen.fixedToCamera = true;
+	
+	console.log(titleScreen);
+	
+	tween = game.add.tween(titleScreen)
+	tween.to( { alpha: 0 }, 4000, Phaser.Easing.Linear.None, true, 0, 0, false);
+	tween.onComplete.add(showStartScreen2, this);
+	
+}
+
+function showStartScreen2() {
+	titleScreen.destroy();
 }
 
 function recursivelyIndirectTouchingQuery(person)
