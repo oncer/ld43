@@ -47,6 +47,7 @@ function preload ()
 	game.load.image('rope', 'gfx/rope.png');
 	game.load.image('island_start', 'gfx/island_start.png');
 	game.load.image('island_end', 'gfx/island_end.png');
+	game.load.image('win_screen', 'gfx/winscreen.png');
 	game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 }
 
@@ -171,6 +172,7 @@ function create ()
 	// NPE
 	balloon = spawnPersonOnBalloon(8, 400, 680);
 	game.time.events.add(4000, function() {if (balloon != null && balloon.body != null) pop(balloon)}, self);
+	
 }
 
 function update ()
@@ -374,6 +376,14 @@ function update ()
 	debugText.y = 240 + game.camera.view.y / game.camera.scale.y; 
 	//zeppelin.body.rotateRight(1);
 
+}
+
+function showWinScreen() {
+	winScreen = game.add.sprite(0, 0, 'win_screen');
+	winScreen.fixedToCamera = true;
+	
+	winScreen.alpha = 0;
+	game.add.tween(winScreen).to( { alpha: 1 }, 2000, Phaser.Easing.Linear.None, true, 0, 0, false);
 }
 
 function recursivelyIndirectTouchingQuery(person)
