@@ -169,7 +169,7 @@ function create ()
 	
 	// NPE
 	balloon = spawnPersonOnBalloon(8, 400, 680);
-	game.time.events.add(4000, function() {pop(balloon)}, self);
+	game.time.events.add(3900, function() {pop(balloon)}, self);
 }
 
 function update ()
