@@ -31,7 +31,7 @@ function preload ()
 	game.load.spritesheet('hudDistance', 'gfx/hud_distance_bar.png', 128, 16);
 	game.load.spritesheet('hudDistanceCursor', 'gfx/hud_distance_cursor.png', 16, 16);
 	game.load.spritesheet('gore', 'gfx/gore.png', 16, 16);
-	game.load.spritesheet('mine', 'gfx/mine.png', 32, 32);
+	game.load.spritesheet('mine', 'gfx/mine.png', 31, 31);
 	game.load.spritesheet('explosion', 'gfx/explosion.png', 64, 64);
 	game.load.image('rope', 'gfx/rope.png');
 	game.load.image('island_start', 'gfx/island_start.png');
@@ -276,7 +276,7 @@ function update ()
 		var balloon = balloonGroup.children[b];
 		if (balloon.popped) {
 			if ((T - balloon.popTime)*30 > balloon.frame){
-				if (balloon.frame == 3){
+				if (balloon.frame == 4){
 					balloon.destroy();
 				} else {
 					balloon.frame += 1;
