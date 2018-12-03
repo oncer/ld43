@@ -274,6 +274,7 @@ function update ()
 	// update balloons
 	for (var b in balloonGroup.children) {
 		var balloon = balloonGroup.children[b];
+		balloon.body.angle = 0;
 		if (balloon.popped) {
 			if ((T - balloon.popTime)*30 > balloon.frame){
 				if (balloon.frame == 4){
