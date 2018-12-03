@@ -50,6 +50,7 @@ preload ()
 	game.load.audio('birdSound', 'sfx/bird.ogg');
 	game.load.audio('splashSound', 'sfx/splash.ogg');
 	game.load.audio('peopleSound', 'sfx/person.ogg');
+	game.load.audio('warningSound', 'sfx/warning.ogg');
 }
 
 create ()
@@ -192,6 +193,8 @@ create ()
 	this.birdSound = game.add.audio('birdSound');
 	this.splashSound = game.add.audio('splashSound');
 	this.peopleSound = game.add.audio('peopleSound');
+	this.warningSound = game.add.audio('warningSound');
+	this.warningSoundArmed = true; // can/should it be played
 	
 	this.loseSoundPlayed = false;
 	
@@ -555,9 +558,14 @@ updateZeppelin()
 
 	if (this.peopleOnZeppelin.length > 0 && !this.loseSoundPlayed) {
 		this.zeroPeopleTimer = 0;
+		this.warningSoundArmed = true;
 	} else {
 		this.zeroPeopleTimer += this.deltaT;
 		if (this.zeroPeopleTimer > this.zeroPeopleTimeout) {
+			if (this.warningSoundArmed) {
+				this.warningSound.play('', 0, 0.4);
+				this.warningSoundArmed = false;
+			}
 			this.zeppelinTargetRotation = 0.8; // steep decline
 			rotateSpeed = 2;
 		}
