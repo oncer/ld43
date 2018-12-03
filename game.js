@@ -608,19 +608,19 @@ function spawnBalloon(x, y, steel){
 
 function destroyRope(balloon)
 {
-		if (balloon.body.ropeConstraint != null) {
-			balloon.body.ropeConstraint.bodyB.parent.ropeConstraint = null;
-			game.physics.p2.removeConstraint(balloon.body.ropeConstraint);
+	if (balloon.body.ropeConstraint != null) {
+		balloon.body.ropeConstraint.bodyB.parent.ropeConstraint = null;
+		game.physics.p2.removeConstraint(balloon.body.ropeConstraint);
 
-			balloon.body.ropeConstraint = null;
-		}
+		balloon.body.ropeConstraint = null;
+	}
 }
 
-function pop(balloon){
+function pop(balloon)
+{
 	destroyRope(balloon);
-		balloon.popped = true;
-		balloon.popTime = T;
-	}
+	balloon.popped = true;
+	balloon.popTime = T;
 }
 
 function spawnPersonOnBalloon(i, x, y){
